@@ -1,0 +1,3 @@
+﻿  main.cpp
+C:\Users\Philipp\source\repos\My1GameEngine\My1GameEngine\main.cpp(22,13): warning C4101: myFileSystem: неиспользованная локальная переменная
+  My1GameEngine.vcxproj -> C:\Users\Philipp\source\repos\My1GameEngine\x64\Debug\My1GameEngine.exe
