@@ -17,6 +17,7 @@ int RenderSystem::SetupGraphicsConext()
 
 void RenderSystem::StartLoop()
 {
+	std::lock_guard<std::mutex> guard(MyMutexForOurQueues); // lock for the other threads
 	_window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
 	if (!_window)
 	{
@@ -38,22 +39,20 @@ void RenderSystem::StartLoop()
 		// check vector for Actions
 		if (!_RenderCommandList.empty()) // if there are any requests for manipulate with render
 		{
-			for (int i = _RenderCommandList.size() - 1; i >= 0; i--)
-			{
-				switch (_RenderCommandList[i])
+				switch (_RenderCommandList.front())
 				{
 					case RenderCommand::AddMesh :
 					{							
 						// load 3d mesh
-						if (_Data3DMeshList[_Data3DMeshList.size() - 1].GraphicsGenerateNewVAO)
+						if (_Data3DMeshList.front().GraphicsGenerateNewVAO)
 						{
-							glGenVertexArrays(1, _Data3DMeshList[_Data3DMeshList.size() - 1].Graphics3DMeshVAOId); // generate new ID for VAO
+							glGenVertexArrays(1, _Data3DMeshList.front().Graphics3DMeshVAOId); // generate new ID for VAO
 						}
 						
-						glGenBuffers(1, _Data3DMeshList[_Data3DMeshList.size() - 1].Graphics3DMeshVBOId); // generate new ID for VBO everytime
+						glGenBuffers(1, _Data3DMeshList.front().Graphics3DMeshVBOId); // generate new ID for VBO everytime
 
-						glBindBuffer(GL_ARRAY_BUFFER, *_Data3DMeshList[_Data3DMeshList.size() - 1].Graphics3DMeshVBOId); // Make this VBO current
-						glBufferData(GL_ARRAY_BUFFER, _Data3DMeshList[_Data3DMeshList.size() - 1].Graphics3DMeshSizeOfArray, _Data3DMeshList[_Data3DMeshList.size() - 1].Graphics3DMeshPointer, GL_STATIC_DRAW); // load data to VBO
+						glBindBuffer(GL_ARRAY_BUFFER, *_Data3DMeshList.front().Graphics3DMeshVBOId); // Make this VBO current
+						glBufferData(GL_ARRAY_BUFFER, _Data3DMeshList.front().Graphics3DMeshSizeOfArray, _Data3DMeshList.front().Graphics3DMeshPointer, GL_STATIC_DRAW); // load data to VBO
 						
 						glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // mask for data only FLOAT and 3 values (coordinates)
 						glEnableVertexAttribArray(0); // bind that mask for first vertex atrribute (our vbo)
@@ -61,8 +60,8 @@ void RenderSystem::StartLoop()
 						glBindVertexArray(0); // unbind vao
 						std::cout << "successful loading 3d mesh!" << std::endl;
 
-						_RenderCommandList.pop_back(); // remove command from vector
-						_Data3DMeshList.pop_back(); // remove structure from vector
+						_RenderCommandList.pop(); // remove command from vector
+						_Data3DMeshList.pop(); // remove structure from vector
 						break;
 					}
 					case RenderCommand::AddShader :
@@ -70,7 +69,7 @@ void RenderSystem::StartLoop()
 						// compiling vertex shader
 						unsigned int VertexShader; // openGL unique id
 						VertexShader = glCreateShader(GL_VERTEX_SHADER); // generate that id
-						glShaderSource(VertexShader, 1, _DataShaderList[_DataShaderList.size() - 1].GraphicsVertexShaderTextPointer, NULL);// attach the shader source code to the shader object
+						glShaderSource(VertexShader, 1, _DataShaderList.front().GraphicsVertexShaderTextPointer, NULL);// attach the shader source code to the shader object
 						glCompileShader(VertexShader);// compile the shader
 						
 						//check successful compilation of VertexShader
@@ -86,7 +85,7 @@ void RenderSystem::StartLoop()
 						// compiling fragment shader
 						unsigned int FragmentShader; // openGL unique id
 						FragmentShader = glCreateShader(GL_FRAGMENT_SHADER); // generate that id
-						glShaderSource(FragmentShader, 1, _DataShaderList[_DataShaderList.size() - 1].GraphicsFragmentShaderTextPointer, NULL); // attach the shader cource code to the shader object
+						glShaderSource(FragmentShader, 1, _DataShaderList.front().GraphicsFragmentShaderTextPointer, NULL); // attach the shader cource code to the shader object
 						glCompileShader(FragmentShader); // compile the shader
 
 						//check successful compilation of FragmentShader
@@ -100,15 +99,15 @@ void RenderSystem::StartLoop()
 						}
 						
 						// create shader program from two compiled shaders (fragment + vertex)
-						*_DataShaderList[_DataShaderList.size() - 1].GraphicsShaderProgramId = glCreateProgram(); //generate ID for shaderProgram
-						glAttachShader(*_DataShaderList[_DataShaderList.size() - 1].GraphicsShaderProgramId, VertexShader); // attach vertex shader to shader program
-						glAttachShader(*_DataShaderList[_DataShaderList.size() - 1].GraphicsShaderProgramId, FragmentShader); // attach fragment shader to shader program
-						glLinkProgram(*_DataShaderList[_DataShaderList.size() - 1].GraphicsShaderProgramId); // link code together
+						*_DataShaderList.front().GraphicsShaderProgramId = glCreateProgram(); //generate ID for shaderProgram
+						glAttachShader(*_DataShaderList.front().GraphicsShaderProgramId, VertexShader); // attach vertex shader to shader program
+						glAttachShader(*_DataShaderList.front().GraphicsShaderProgramId, FragmentShader); // attach fragment shader to shader program
+						glLinkProgram(*_DataShaderList.front().GraphicsShaderProgramId); // link code together
 						
 						//check successful linking
 						int ShaderProgramSuccess; // success indicator
 						char ShaderProgramInfoLog[512]; // storage container for the error message
-						glGetProgramiv(*_DataShaderList[_DataShaderList.size() - 1].GraphicsShaderProgramId, GL_LINK_STATUS, &ShaderProgramSuccess);
+						glGetProgramiv(*_DataShaderList.front().GraphicsShaderProgramId, GL_LINK_STATUS, &ShaderProgramSuccess);
 						if (!ShaderProgramSuccess)
 						{
 							glGetProgramInfoLog(ShaderProgramSuccess, 512, NULL, ShaderProgramInfoLog);
@@ -120,24 +119,25 @@ void RenderSystem::StartLoop()
 						glDeleteShader(FragmentShader);
 						std::cout << "successful loading shader!" << std::endl;
 
-						_RenderCommandList.pop_back(); // remove command from vector
-						_DataShaderList.pop_back(); // remove shader info from vector
+						_RenderCommandList.pop(); // remove command from vector
+						_DataShaderList.pop(); // remove shader info from vector
 						break;
 					}
 					case RenderCommand::DrawMesh:
 					{
+						std::cout << "I am here!" << std::endl;
 						glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 						glClear(GL_COLOR_BUFFER_BIT);
 						//std::cout << "i am here" << std::endl;
-						glUseProgram(*_DataDrawList[_DataDrawList.size() - 1].GraphicsShaderProgramId);
-						glBindVertexArray(*_DataDrawList[_DataDrawList.size() - 1].Graphics3DMeshVAOId);
+						glUseProgram(*_DataDrawList.front().GraphicsShaderProgramId);
+						std::cout << *_DataDrawList.front().GraphicsShaderProgramId << std::endl;
+						glBindVertexArray(*_DataDrawList.front().Graphics3DMeshVAOId);
 						glDrawArrays(GL_TRIANGLES, 0, 3);
 						glBindVertexArray(0);
 						glfwSwapBuffers(_window);
 						break;
 					}
 				}
-			}
 		}
 	}
 	glfwTerminate();
@@ -155,21 +155,24 @@ void RenderSystem::framebuffer_size_callback(GLFWwindow* window, int width, int 
 
 void RenderSystem::Add3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* Graphics3DMeshVBOId, float* Graphics3DMeshPointer, unsigned long long Graphics3DMeshSizeOfArray, bool GraphicsGenerateNewVAO)
 {
+	std::lock_guard<std::mutex> guard(MyMutexForOurQueues);
 	std::cout << "Add3DMesh function" << std::endl;
-	_Data3DMeshList.push_back(Data3DMesh(Graphics3DMeshVAOId, Graphics3DMeshVBOId, Graphics3DMeshPointer, Graphics3DMeshSizeOfArray, GraphicsGenerateNewVAO));
-	_RenderCommandList.push_back(RenderCommand::AddMesh); // push into render command vector request to add mesh
+	_Data3DMeshList.push(Data3DMesh(Graphics3DMeshVAOId, Graphics3DMeshVBOId, Graphics3DMeshPointer, Graphics3DMeshSizeOfArray, GraphicsGenerateNewVAO));
+	_RenderCommandList.push(RenderCommand::AddMesh); // push into render command vector request to add mesh
 }
 
 void RenderSystem::AddShader(const char** GraphicsVertexShaderTextPointer, const char** GraphicsFragmentShaderTextPointer, unsigned int* GraphicsShaderProgramId)
 {
+	std::lock_guard<std::mutex> guard(MyMutexForOurQueues);
 	std::cout << "AddShader function" << std::endl;
-	_DataShaderList.push_back(DataShader(GraphicsVertexShaderTextPointer, GraphicsFragmentShaderTextPointer, GraphicsShaderProgramId));
-	_RenderCommandList.push_back(RenderCommand::AddShader);
+	_DataShaderList.push(DataShader(GraphicsVertexShaderTextPointer, GraphicsFragmentShaderTextPointer, GraphicsShaderProgramId));
+	_RenderCommandList.push(RenderCommand::AddShader);
 }
 
-void RenderSystem::Draw3DMesh(unsigned int* Graphics3DMeshVAO, unsigned int* GraphicsShaderProgram)
+void RenderSystem::Draw3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* GraphicsShaderProgram)
 {
-	_DataDrawList.push_back(DataDraw(Graphics3DMeshVAO, GraphicsShaderProgram));
-	_RenderCommandList.push_back(RenderCommand::DrawMesh);
+	std::lock_guard<std::mutex> guard(MyMutexForOurQueues);
+	_DataDrawList.push(DataDraw(Graphics3DMeshVAOId, GraphicsShaderProgram));
+	_RenderCommandList.push(RenderCommand::DrawMesh);
 }
 

@@ -5,7 +5,17 @@
 #include <thread>
 #include "FileSystem.h"
 
-int main(void)
+void WantDrawSmth(RenderSystem* myRenderSystem,
+	unsigned int* Graphics3DMeshVAOId, bool GraphicsGenerateNewVAO, 
+	unsigned int* Graphics3DMeshVBOId, float* Graphics3DMeshPointer, unsigned long long Graphics3DMeshSizeOfArray,
+	const char** GraphicsVertexShaderTextPointer, const char** GraphicsFragmentShaderTextPointer, unsigned int* GraphicsShaderProgramId)
+{
+	myRenderSystem->Add3DMesh(Graphics3DMeshVAOId, Graphics3DMeshVBOId, Graphics3DMeshPointer, Graphics3DMeshSizeOfArray, GraphicsGenerateNewVAO);
+	myRenderSystem->AddShader(GraphicsVertexShaderTextPointer, GraphicsFragmentShaderTextPointer, GraphicsShaderProgramId);
+	myRenderSystem->Draw3DMesh(Graphics3DMeshVAOId, GraphicsShaderProgramId);
+}
+
+int main()
 {
 	float vertices[] = {
 		-0.5f, -0.5f, 0.0f,
@@ -19,7 +29,7 @@ int main(void)
 	// shader program ID	
 	unsigned int shaderProgram; // our shader ID in openGL space
 	
-	FileSystem myFileSystem; // create file system
+//	FileSystem myFileSystem; // create file system
 	//const char* VertexShaderSource = myFileSystem.ReadFileToString("Data/vertexshader.glsl").c_str();
 //	std::cout << myFileSystem.ReadFileToString("Data/vertexshader.glsl") <<std::endl;
 	//const char* FragmentShaderSource = myFileSystem.ReadFileToString("Data/fragmentshader.glsl").c_str();
@@ -36,14 +46,24 @@ int main(void)
 		"FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
 		"}\n\0";
 	RenderSystem myRenderSystem; // create render system
-	std::thread RenderSystemLoop(&RenderSystem::StartLoop , &myRenderSystem); // start our system
+
+/*	std::thread DrawQueryThread(WantDrawSmth,
+		&myRenderSystem,
+		&MeshInfoFormatID, true,
+		&MeshID, &vertices[0], sizeof(vertices),
+		&VertexShaderSource, &FragmentShaderSource, &shaderProgram); //push the data to RenderSystem structures */
+
+
 	std::thread LoadModel(&RenderSystem::Add3DMesh, &myRenderSystem, &MeshInfoFormatID, &MeshID, &vertices[0], sizeof(vertices), true); // load 3d mesh
-//	std::cout << VertexShaderSource <<std::endl;
 	std::thread LoadShader(&RenderSystem::AddShader, &myRenderSystem, &VertexShaderSource, &FragmentShaderSource, &shaderProgram);
 	std::thread DrawData(&RenderSystem::Draw3DMesh, &myRenderSystem, &MeshInfoFormatID, &shaderProgram);
-	LoadShader.join();
-	DrawData.join();
-	LoadModel.join();
+	std::thread RenderSystemLoop(&RenderSystem::StartLoop, &myRenderSystem); // start our system
+
+//	LoadModel.join();
+//	LoadShader.join();
+//	DrawData.join();
+
 	RenderSystemLoop.join();
+//	DrawQueryThread.join();
 	
 }
