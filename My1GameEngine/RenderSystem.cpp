@@ -17,7 +17,6 @@ int RenderSystem::SetupGraphicsConext()
 
 void RenderSystem::StartLoop()
 {
-	std::lock_guard<std::mutex> guard(MyMutexForOurQueues); // lock for the other threads
 	_window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
 	if (!_window)
 	{
@@ -44,18 +43,24 @@ void RenderSystem::StartLoop()
 					case RenderCommand::AddMesh :
 					{							
 						// load 3d mesh
-						if (_Data3DMeshList.front().GraphicsGenerateNewVAO)
+						if (_Data3DMeshList.front().GraphicsGenerateNewVAO) // check if we need to generate new VAO
 						{
 							glGenVertexArrays(1, _Data3DMeshList.front().Graphics3DMeshVAOId); // generate new ID for VAO
 						}
+						glBindVertexArray(*_Data3DMeshList.front().Graphics3DMeshVAOId); // bind current VAO for declare future data
 						
 						glGenBuffers(1, _Data3DMeshList.front().Graphics3DMeshVBOId); // generate new ID for VBO everytime
+						glGenBuffers(1, _Data3DMeshList.front().Graphics3DMeshEBOId); // generate new ID for EBO
 
 						glBindBuffer(GL_ARRAY_BUFFER, *_Data3DMeshList.front().Graphics3DMeshVBOId); // Make this VBO current
 						glBufferData(GL_ARRAY_BUFFER, _Data3DMeshList.front().Graphics3DMeshSizeOfArray, _Data3DMeshList.front().Graphics3DMeshPointer, GL_STATIC_DRAW); // load data to VBO
-						
-						glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // mask for data only FLOAT and 3 values (coordinates)
+
+						glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *_Data3DMeshList.front().Graphics3DMeshEBOId);
+						glBufferData(GL_ELEMENT_ARRAY_BUFFER, _Data3DMeshList.front().Graphics3DMeshSizeOfArray,
+							_Data3DMeshList.front().Graphics3DMeshIndicesPointer, GL_STATIC_DRAW);
+
 						glEnableVertexAttribArray(0); // bind that mask for first vertex atrribute (our vbo)
+						glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // mask for data only FLOAT and 3 values (coordinates)
 						glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind vbo
 						glBindVertexArray(0); // unbind vao
 						std::cout << "successful loading 3d mesh!" << std::endl;
@@ -125,14 +130,12 @@ void RenderSystem::StartLoop()
 					}
 					case RenderCommand::DrawMesh:
 					{
-						std::cout << "I am here!" << std::endl;
 						glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 						glClear(GL_COLOR_BUFFER_BIT);
-						//std::cout << "i am here" << std::endl;
 						glUseProgram(*_DataDrawList.front().GraphicsShaderProgramId);
-						std::cout << *_DataDrawList.front().GraphicsShaderProgramId << std::endl;
 						glBindVertexArray(*_DataDrawList.front().Graphics3DMeshVAOId);
-						glDrawArrays(GL_TRIANGLES, 0, 3);
+						//glDrawArrays(GL_TRIANGLES, 0, 3);
+						glDrawElements(GL_TRIANGLES, _DataDrawList.front().Graphics3DMeshIndicesLength, GL_UNSIGNED_INT, 0);
 						glBindVertexArray(0);
 						glfwSwapBuffers(_window);
 						break;
@@ -153,26 +156,29 @@ void RenderSystem::framebuffer_size_callback(GLFWwindow* window, int width, int 
 	glViewport(0, 0, width, height);
 }
 
-void RenderSystem::Add3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* Graphics3DMeshVBOId, float* Graphics3DMeshPointer, unsigned long long Graphics3DMeshSizeOfArray, bool GraphicsGenerateNewVAO)
+void RenderSystem::Add3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* Graphics3DMeshVBOId, unsigned int* Graphics3DMeshEBOId,
+	float* Graphics3DMeshPointer, unsigned long long Graphics3DMeshSizeOfArray,
+	unsigned int* Graphics3DMeshIndicesPointer, unsigned long long Graphics3DMeshIndicesSizeOfArray,
+	bool GraphicsGenerateNewVAO)
 {
-	std::lock_guard<std::mutex> guard(MyMutexForOurQueues);
 	std::cout << "Add3DMesh function" << std::endl;
-	_Data3DMeshList.push(Data3DMesh(Graphics3DMeshVAOId, Graphics3DMeshVBOId, Graphics3DMeshPointer, Graphics3DMeshSizeOfArray, GraphicsGenerateNewVAO));
+	_Data3DMeshList.push(Data3DMesh(Graphics3DMeshVAOId, Graphics3DMeshEBOId, Graphics3DMeshVBOId,
+		Graphics3DMeshPointer, Graphics3DMeshSizeOfArray,
+		Graphics3DMeshIndicesPointer, Graphics3DMeshIndicesSizeOfArray,
+		GraphicsGenerateNewVAO));
 	_RenderCommandList.push(RenderCommand::AddMesh); // push into render command vector request to add mesh
 }
 
 void RenderSystem::AddShader(const char** GraphicsVertexShaderTextPointer, const char** GraphicsFragmentShaderTextPointer, unsigned int* GraphicsShaderProgramId)
 {
-	std::lock_guard<std::mutex> guard(MyMutexForOurQueues);
 	std::cout << "AddShader function" << std::endl;
 	_DataShaderList.push(DataShader(GraphicsVertexShaderTextPointer, GraphicsFragmentShaderTextPointer, GraphicsShaderProgramId));
 	_RenderCommandList.push(RenderCommand::AddShader);
 }
 
-void RenderSystem::Draw3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* GraphicsShaderProgram)
+void RenderSystem::Draw3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* GraphicsShaderProgram, int Graphics3DMeshIndicesLength)
 {
-	std::lock_guard<std::mutex> guard(MyMutexForOurQueues);
-	_DataDrawList.push(DataDraw(Graphics3DMeshVAOId, GraphicsShaderProgram));
+	_DataDrawList.push(DataDraw(Graphics3DMeshVAOId, GraphicsShaderProgram, Graphics3DMeshIndicesLength));
 	_RenderCommandList.push(RenderCommand::DrawMesh);
 }
 

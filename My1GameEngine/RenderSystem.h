@@ -18,10 +18,13 @@ class RenderSystem
 		RenderSystem();
 		int SetupGraphicsConext();
 		void StartLoop();
-		void Add3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* Graphics3DMeshVBOId, float* Graphics3DMeshPointer, unsigned long long Graphics3DMeshSizeOfArray, bool GraphicsGenerateNewVAO);
+		void Add3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* Graphics3DMeshVBOId, unsigned int* Graphics3DMeshEBOId,
+			float* Graphics3DMeshPointer, unsigned long long Graphics3DMeshSizeOfArray,
+			unsigned int* Graphics3DMeshIndicesPointer, unsigned long long Graphics3DMeshIndicesSizeOfArray,
+			bool GraphicsGenerateNewVAO);
 		void AddShader(const char** GraphicsVertexShaderTextPointer, const char** GraphicsFragmentShaderTextPointer, unsigned int* GraphicsShaderProgramId);
-		void Draw3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* GraphicsShaderProgram);
-		std::mutex MyMutexForOurQueues; // mutex for our queues
+		void Draw3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* GraphicsShaderProgram, int Graphics3DMeshIndicesLength);
+
 	private:
 		GLFWwindow* _window;
 		static void  framebuffer_size_callback(GLFWwindow* window, int width, int height);
