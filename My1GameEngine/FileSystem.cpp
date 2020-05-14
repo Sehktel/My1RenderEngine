@@ -1,12 +1,27 @@
 #include "FileSystem.h"
 
-std::string FileSystem::ReadFileToString(const char* FileSystemPathToFile)
+int FileSystem::ReadFromFileToString(const char* PathToFile, std::string* ResultString)
 {
-	std::string Line;
-	std::ifstream InputFile;
-	InputFile.open(FileSystemPathToFile); // open this file
-	std::stringstream StrStream; // stream of strings
-	StrStream << InputFile.rdbuf(); // read full file
-	Line = StrStream.str(); // write full stream of strings into one string
-	return Line;
+    std::ifstream MyInputFile(PathToFile, std::fstream::out | std::fstream::app); // create file or open 
+
+    // check for errors while opening
+    if (!MyInputFile)
+    {
+        std::cout << "Problems!" << std::endl;
+        MyInputFile.close();
+        return -1;
+    }
+
+    // read file to string
+    char CurrentCharacter;
+    std::string TempString;
+
+    while (std::getline(MyInputFile, TempString))
+    {
+        *ResultString = *ResultString + TempString + '\n';
+    }
+    *ResultString = *ResultString + '\0';
+
+    MyInputFile.close();
+    return 0;
 }

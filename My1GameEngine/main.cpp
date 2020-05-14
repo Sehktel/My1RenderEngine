@@ -42,22 +42,20 @@ int main()
 	// shader program ID	
 	unsigned int shaderProgram; // our shader ID in openGL space
 	
-//	FileSystem myFileSystem; // create file system
-	//const char* VertexShaderSource = myFileSystem.ReadFileToString("Data/vertexshader.glsl").c_str();
-//	std::cout << myFileSystem.ReadFileToString("Data/vertexshader.glsl") <<std::endl;
-	//const char* FragmentShaderSource = myFileSystem.ReadFileToString("Data/fragmentshader.glsl").c_str();
-	const GLchar* VertexShaderSource = "#version 330 core\n"
-		"layout (location = 0) in vec3 position;\n"
-		"void main()\n"
-		"{\n"
-		"gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
-		"}\0";
-	const GLchar* FragmentShaderSource = "#version 330 core\n"
-		"out vec4 FragColor;\n"
-		"void main()\n"
-		"{\n"
-		"FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-		"}\n\0";
+	FileSystem myFileSystem; // create file system
+	std::string SourceCodeStringVertexShader;
+	std::string SourceCodeStringFragmentShader;
+
+	myFileSystem.ReadFromFileToString("Data/vertexshader.glsl", &SourceCodeStringVertexShader);
+	myFileSystem.ReadFromFileToString("Data/fragmentshader.glsl", &SourceCodeStringFragmentShader);
+
+	// allocate memory for GLchar shader arrays
+	const char* VertexShaderSource = new GLchar[SourceCodeStringVertexShader.length() + 1];
+	const char* FragmentShaderSource = new GLchar[SourceCodeStringFragmentShader.length() + 1];
+
+	VertexShaderSource = SourceCodeStringVertexShader.c_str();
+	FragmentShaderSource = SourceCodeStringFragmentShader.c_str();
+
 	RenderSystem myRenderSystem; // create render system
 
 	std::thread RenderSystemLoop(&RenderSystem::StartLoop, &myRenderSystem); // start our system
