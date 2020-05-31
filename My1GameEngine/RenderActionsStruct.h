@@ -1,6 +1,6 @@
 #pragma once
 // RenderCommand enum int type of RenderSystem processed commands
-enum class RenderCommand : int { AddMesh, AddShader, DrawMesh };
+enum class RenderCommand : int { AddMesh, AddShader, DrawMesh, BindShader, AddUniform, UpdateUniform };
 
 // exchange sturctures with RenderSystem
 // STRUCT FOR: 3d mesh STRUCT FORMAT: 3 floats xyz normalized storing in single VBO in a single VAO
@@ -35,32 +35,69 @@ struct Data3DMesh
     }
 };
 
-// STRUCT FOR: shader data STRUCT FORMAT: info includes vertex+fragment shader
-struct DataShader
+//STURCT FOR: drawing 3d mesh STRUCT FORMAT: 3d model(VAO) + compiled shader program
+struct DataDraw
+{
+    unsigned int* Graphics3DMeshVAOId; // VAO of mesh
+    int Graphics3DMeshIndicesLength; // length of index array; count of elements
+
+    DataDraw(unsigned int* _Graphics3DMeshVAOId, int _Graphics3DMeshIndicesLength)
+    {
+        Graphics3DMeshVAOId = _Graphics3DMeshVAOId;
+        Graphics3DMeshIndicesLength = _Graphics3DMeshIndicesLength;
+    }
+};
+
+// STRUCT FOR: AddShader load shader data STRUCT FORMAT: info includes vertex+fragment shader
+struct DataShaderLoad
 {
     const char** GraphicsVertexShaderTextPointer; // pointer to pointer of text begin vertex shader
     const char** GraphicsFragmentShaderTextPointer; // pointer to pointer of text begin fragment shader
     unsigned int* GraphicsShaderProgramId;// id pointer to use shader
 
-    DataShader(const char** _GraphicsVertexShaderTextPointer, const char** _GraphicsFragmentShaderTextPointer, unsigned int* _GraphicsShaderProgramId)
+    DataShaderLoad(const char** _GraphicsVertexShaderTextPointer, const char** _GraphicsFragmentShaderTextPointer, unsigned int* _GraphicsShaderProgramId)
     {
         GraphicsVertexShaderTextPointer = _GraphicsVertexShaderTextPointer;
         GraphicsFragmentShaderTextPointer = _GraphicsFragmentShaderTextPointer;
         GraphicsShaderProgramId = _GraphicsShaderProgramId;
     }
 };
+// STRUCT FOR: Bind shader don't need
 
-//STURCT FOR: drawing 3d mesh STRUCT FORMAT: 3d model(VAO) + compiled shader program
-struct DataDraw
+
+// STRUCT FOR: load uniform for Shader Program and associate value with name 
+struct DataUniformLoad
 {
-    unsigned int* Graphics3DMeshVAOId; // VAO of mesh
-    unsigned int* GraphicsShaderProgramId; // shader program for drawing
-    int Graphics3DMeshIndicesLength; // length of index array; count of elements
+    unsigned int* GraphicsUniformId; // id [location] of the uniform
+    unsigned int* GraphicsShaderProgramId;// program pointer
+    const char* GraphicsUniformName; // Uniform Name in shader program
 
-    DataDraw(unsigned int* _Graphics3DMeshVAOId, unsigned int* _GraphicsShaderProgramId, int _Graphics3DMeshIndicesLength)
+    DataUniformLoad(unsigned int* _GraphicsUniformId, unsigned int* _GraphicsShaderProgramId, const char* _GraphicsUniformName)
     {
-        Graphics3DMeshVAOId = _Graphics3DMeshVAOId;
+        GraphicsUniformId = _GraphicsUniformId;
         GraphicsShaderProgramId = _GraphicsShaderProgramId;
-        Graphics3DMeshIndicesLength = _Graphics3DMeshIndicesLength;
+        GraphicsUniformName = _GraphicsUniformName;
     }
 };
+
+
+// STRUCT FOR: update uniform value 
+struct DataUniformUpdate
+{
+    unsigned int* GraphicsUniformId; // id [location] of the uniform
+    float GraphicsUniformValueFloat0; // 0 float value of updatable uniform 
+    float GraphicsUniformValueFloat1; // 1 float value of updatable uniform 
+    float GraphicsUniformValueFloat2; // 2 float value of updatable uniform 
+    float GraphicsUniformValueFloat3; // 3 float value of updatable uniform
+
+    DataUniformUpdate(unsigned int* _GraphicsUniformId, float _GraphicsUniformValueFloat0, float _GraphicsUniformValueFloat1,
+        float _GraphicsUniformValueFloat2, float _GraphicsUniformValueFloat3)
+    {
+        GraphicsUniformId = _GraphicsUniformId;
+        GraphicsUniformValueFloat0 = _GraphicsUniformValueFloat0;
+        GraphicsUniformValueFloat1 = _GraphicsUniformValueFloat1;
+        GraphicsUniformValueFloat2 = _GraphicsUniformValueFloat2;
+        GraphicsUniformValueFloat3 = _GraphicsUniformValueFloat3;
+    }
+};
+
