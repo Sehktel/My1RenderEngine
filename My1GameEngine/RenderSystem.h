@@ -30,8 +30,11 @@ class RenderSystem
 		// Functions to work with shaders [add, bind, AddUniform, UpdateUniform]
 		void AddShader(const char** GraphicsVertexShaderTextPointer, const char** GraphicsFragmentShaderTextPointer, unsigned int* GraphicsShaderProgramId);
 		void BindShader(unsigned int* GraphicsShaderProgramId);
+
 		void AddShaderUniform(unsigned int* GraphicsUniformId, unsigned int* GraphicsShaderProgramId, const char* GraphicsUniformName);
 		void UpdateShaderUniform(unsigned int* GraphicsUniformId, float VectorX, float VectorY, float VectorZ, float VectorW );
+		// 
+
 	private:
 		GLFWwindow* _window;
 		static void  framebuffer_size_callback(GLFWwindow* window, int width, int height);

@@ -8,46 +8,13 @@
 #include <chrono>
 #include <cmath>
 
-void WantDrawSmth(RenderSystem* myRenderSystem,
-	unsigned int* Graphics3DMeshVAOId, 	unsigned int* Graphics3DMeshVBOId, unsigned int* Graphics3DMeshEBOId,
-	float* Graphics3DMeshPointer, unsigned long long Graphics3DMeshSizeOfArray,
-	unsigned int* Graphics3DMeshIndicesPointer, unsigned long long Graphics3DMeshIndicesSizeOfArray,
-	bool GraphicsGenerateNewVAO,
-	const char** GraphicsVertexShaderTextPointer, const char** GraphicsFragmentShaderTextPointer, unsigned int* GraphicsShaderProgramId,
-	int Graphics3DMeshIndicesLength,
-	unsigned int* GraphicsUniformId, const char* GraphicsUniformName,
-	float UniformX, float UniformY, float UniformZ, float UniformW)
-{
-	float GreenValue;
-	myRenderSystem->Add3DMesh(Graphics3DMeshVAOId, Graphics3DMeshVBOId, Graphics3DMeshEBOId,
-		Graphics3DMeshPointer, Graphics3DMeshSizeOfArray,
-		Graphics3DMeshIndicesPointer, Graphics3DMeshIndicesSizeOfArray,
-		GraphicsGenerateNewVAO);
-
-	myRenderSystem->AddShader(GraphicsVertexShaderTextPointer, GraphicsFragmentShaderTextPointer, GraphicsShaderProgramId);
-	
-	myRenderSystem->AddShaderUniform(GraphicsUniformId, GraphicsShaderProgramId, GraphicsUniformName);
-
-	while (true) // drawing
-	{
-		GreenValue = sin(glfwGetTime() / 2.0f) + 0.5f;
-		std::cout << "Queries Thread" << std::endl;
-		myRenderSystem->BindShader(GraphicsShaderProgramId);
-		myRenderSystem->UpdateShaderUniform(GraphicsUniformId, UniformX, GreenValue, UniformZ, UniformW);
-		myRenderSystem->Draw3DMesh(Graphics3DMeshVAOId, Graphics3DMeshIndicesLength);
-		std::this_thread::sleep_for(std::chrono::milliseconds(17));
-	}
-	//myRenderSystem->Draw3DMesh(Graphics3DMeshVAOId, GraphicsShaderProgramId, Graphics3DMeshIndicesLength);
-}
-
-
-int main()
+void UserActionsThread(RenderSystem* myRenderSystem)
 {
 	float vertices[] = {
-	0.5f, 0.5f, 0.0f, // top right
-	0.5f, -0.5f, 0.0f, // bottom right
-	-0.5f, -0.5f, 0.0f, // bottom left
-	-0.5f, 0.5f, 0.0f // top left
+		0.5f, 0.5f, 0.0f, // top right
+		0.5f, -0.5f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f, // bottom left
+		-0.5f, 0.5f, 0.0f // top left
 	};
 
 	unsigned int indices[] = { // note that we start from 0!
@@ -60,13 +27,12 @@ int main()
 	unsigned int MeshIndicesId; // our EBO for mesh data
 	unsigned int MeshInfoFormatID; // vertex array object (contains pointers to mesh array and mesh array format)
 	// shader program ID	
-	unsigned int shaderProgram; // our shader ID in openGL space
+	unsigned int ShaderProgram; // our shader ID in openGL space
 
 	//uniform ID
-
 	unsigned int UniformID;
 	char UniformName[] = "ourColor";
-	
+
 	FileSystem myFileSystem; // create file system
 	std::string SourceCodeStringVertexShader;
 	std::string SourceCodeStringFragmentShader;
@@ -81,20 +47,33 @@ int main()
 	VertexShaderSource = SourceCodeStringVertexShader.c_str();
 	FragmentShaderSource = SourceCodeStringFragmentShader.c_str();
 
-	RenderSystem myRenderSystem; // create render system
+	float GreenValue;
 
-	std::thread RenderSystemLoop(&RenderSystem::StartLoop, &myRenderSystem); // start our system
-	std::thread DrawQueryThread(WantDrawSmth,
-		&myRenderSystem,
-		&MeshInfoFormatID, &MeshID, &MeshIndicesId,
-		&vertices[0], sizeof(vertices),
-		&indices[0], sizeof(indices),
-		true,
-		&VertexShaderSource, &FragmentShaderSource, &shaderProgram,
-		6,
-		&UniformID, UniformName,
-		1.0f, 1.0f, 1.0f, 1.0f); //push the data to RenderSystem structures 
+	// RenderSystem static part
+	myRenderSystem->Add3DMesh(&MeshInfoFormatID, &MeshID, &MeshIndicesId, vertices, sizeof(vertices), indices, sizeof(indices), true);
+	myRenderSystem->AddShader(&VertexShaderSource, &FragmentShaderSource, &ShaderProgram);
+	myRenderSystem->AddShaderUniform(&UniformID, &ShaderProgram, UniformName);
 
-	DrawQueryThread.join();
+	// RenderSystem dynamic part [Drawing and processing]
+	while (true) // drawing
+	{
+		GreenValue = sin(glfwGetTime() / 2.0f) + 0.5f;
+		myRenderSystem->BindShader(&ShaderProgram);
+		myRenderSystem->UpdateShaderUniform(&UniformID, 1.0f, GreenValue, 1.0f, 1.0f);
+		myRenderSystem->Draw3DMesh(&MeshInfoFormatID, sizeof(indices)/ sizeof(indices[0]));
+		std::this_thread::sleep_for(std::chrono::milliseconds(17));
+	}
+}
+
+
+int main()
+{
+	RenderSystem myRenderSystem; // create RenderSystem
+
+	std::thread RenderSystemLoop(&RenderSystem::StartLoop, &myRenderSystem); // start RenderSystem
+
+	std::thread UserDrawQueryThread(UserActionsThread, &myRenderSystem); // user's query thread
+
+	UserDrawQueryThread.join();
 	RenderSystemLoop.join();	
 }
