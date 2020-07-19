@@ -101,3 +101,14 @@ struct DataUniformUpdate
     }
 };
 
+// STURCT FOR: load textures
+struct DataTexture2DLoad
+{
+    unsigned char* GraphicsTextureData;
+    int GraphicsTextureWidth;
+    int GraphicsTextureHeight;
+    int GraphicsTextureNumberOfChannels;
+};
+
+// STRUCT FOR: bind textures
+

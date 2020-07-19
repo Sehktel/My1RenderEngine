@@ -1,3 +1,2 @@
-﻿  main.cpp
-C:\Users\Philipp\source\repos\My1GameEngine\My1GameEngine\main.cpp(60,42): warning C4244: =: преобразование "double" в "float", возможна потеря данных
+﻿  RenderSystem.cpp
   My1GameEngine.vcxproj -> C:\Users\Philipp\source\repos\My1GameEngine\x64\Debug\My1GameEngine.exe

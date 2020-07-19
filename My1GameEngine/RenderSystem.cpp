@@ -65,7 +65,7 @@ void RenderSystem::StartLoop()
 
 					glEnableVertexAttribArray(0); // bind that mask for first vertex atrribute (our vbo)
 					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // mask for data only FLOAT and 3 values (coordinates)
-					glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind vbo
+					glBindBuffer(GL_ARRAY_BUFFER , 0); // unbind vbo
 					glBindVertexArray(0); // unbind vao
 					std::cout << "successful loading 3d mesh!" << std::endl;
 
@@ -209,11 +209,11 @@ void RenderSystem::Add3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* Gr
 	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
 	std::cout << "Add3DMesh function" << std::endl;
-	_Data3DMeshList.push(Data3DMesh(Graphics3DMeshVAOId, Graphics3DMeshEBOId, Graphics3DMeshVBOId,
+	_Data3DMeshList.emplace(Graphics3DMeshVAOId, Graphics3DMeshEBOId, Graphics3DMeshVBOId,
 		Graphics3DMeshPointer, Graphics3DMeshSizeOfArray,
 		Graphics3DMeshIndicesPointer, Graphics3DMeshIndicesSizeOfArray,
-		GraphicsGenerateNewVAO));
-	_RenderCommandList.push(RenderCommand::AddMesh); // push into render command vector request to add mesh
+		GraphicsGenerateNewVAO);
+	_RenderCommandList.emplace(RenderCommand::AddMesh); // call constuctor and push into render command vector request to add mesh
 	
 	FlagBusyMemory = false; // release flag busy memory
 }
@@ -226,8 +226,8 @@ void RenderSystem::AddShader(const char** GraphicsVertexShaderTextPointer, const
 	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
 	std::cout << "AddShader function" << std::endl;
-	_DataShaderLoadList.push(DataShaderLoad(GraphicsVertexShaderTextPointer, GraphicsFragmentShaderTextPointer, GraphicsShaderProgramId));
-	_RenderCommandList.push(RenderCommand::AddShader);
+	_DataShaderLoadList.emplace(GraphicsVertexShaderTextPointer, GraphicsFragmentShaderTextPointer, GraphicsShaderProgramId);
+	_RenderCommandList.emplace(RenderCommand::AddShader);
 	FlagBusyMemory = false; // release flag busy memory
 }
 
@@ -238,8 +238,8 @@ void RenderSystem::Draw3DMesh(unsigned int* Graphics3DMeshVAOId, int Graphics3DM
 	}
 	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
-	_DataDrawList.push(DataDraw(Graphics3DMeshVAOId, Graphics3DMeshIndicesLength));
-	_RenderCommandList.push(RenderCommand::DrawMesh);
+	_DataDrawList.emplace(Graphics3DMeshVAOId, Graphics3DMeshIndicesLength);
+	_RenderCommandList.emplace(RenderCommand::DrawMesh);
 	FlagBusyMemory = false; // release flag busy memory
 }
 
@@ -250,8 +250,8 @@ void RenderSystem::BindShader(unsigned int* GraphicsShaderProgramId)
 	}
 	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
-	_DataShaderBindList.push(GraphicsShaderProgramId); // push pointer of binded program to render system vector of struct
-	_RenderCommandList.push(RenderCommand::BindShader);
+	_DataShaderBindList.emplace(GraphicsShaderProgramId); // call constructor and push pointer of binded program to render system vector of struct
+	_RenderCommandList.emplace(RenderCommand::BindShader);
 	FlagBusyMemory = false; // release flag busy memory
 }
 
@@ -262,8 +262,8 @@ void RenderSystem::AddShaderUniform(unsigned int* GraphicsUniformId, unsigned in
 	}
 	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
-	_DataUniformLoadList.push(DataUniformLoad(GraphicsUniformId, GraphicsShaderProgramId, GraphicsUniformName));
-	_RenderCommandList.push(RenderCommand::AddUniform);
+	_DataUniformLoadList.emplace(GraphicsUniformId, GraphicsShaderProgramId, GraphicsUniformName);
+	_RenderCommandList.emplace(RenderCommand::AddUniform);
 	FlagBusyMemory = false; // release flag busy memory
 }
 
@@ -274,8 +274,8 @@ void RenderSystem::UpdateShaderUniform(unsigned int* GraphicsUniformId, float Ve
 	}
 	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
-	_DataUniformUpdateList.push(DataUniformUpdate(GraphicsUniformId, VectorX, VectorY, VectorZ, VectorW));
-	_RenderCommandList.push(RenderCommand::UpdateUniform);
+	_DataUniformUpdateList.emplace(GraphicsUniformId, VectorX, VectorY, VectorZ, VectorW);
+	_RenderCommandList.emplace(RenderCommand::UpdateUniform);
 	FlagBusyMemory = false; // release flag busy memory
 }
 

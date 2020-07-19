@@ -1,4 +1,5 @@
 #include "FileSystem.h"
+#include "stb_image.h"
 
 int FileSystem::ReadFromFileToString(const char* PathToFile, std::string* ResultString)
 {
@@ -24,4 +25,9 @@ int FileSystem::ReadFromFileToString(const char* PathToFile, std::string* Result
 
     MyInputFile.close();
     return 0;
+}
+
+unsigned char* FileSystem::ReadRawDataFromImage(const char* PathToImage, int* ImageWidth, int* ImageHeight, int* NumberOfImagesChannel)
+{
+    return stbi_load(PathToImage, ImageWidth, ImageWidth, NumberOfImagesChannel, 0);
 }

@@ -1,6 +1,9 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "RenderSystem.h"
 #include "FileSystem.h"
 
@@ -22,6 +25,15 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 		1, 2, 3 // second triangle
 	};
 
+	float textureCoorinates[] = {
+		0.0f, 1.0f,
+		1.0f, 0.0f,
+		1.0f, 1.0f,
+		1.0f, 0.0f,
+		0.0f, 0.0f,
+		0.0f, 1.0f
+	};
+
 	// vertex objects IDs
 	unsigned int MeshID; // our buffer reference for triangle
 	unsigned int MeshIndicesId; // our EBO for mesh data
@@ -40,6 +52,13 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 	myFileSystem.ReadFromFileToString("Data/vertexshader.glsl", &SourceCodeStringVertexShader);
 	myFileSystem.ReadFromFileToString("Data/fragmentshader.glsl", &SourceCodeStringFragmentShader);
 
+	// textures
+	unsigned int TextureID;
+	unsigned char* TextureData;
+	int TexurePixelWidth, TexturePixelHeight, TextureNChannels;
+	
+	TextureData = myFileSystem.ReadRawDataFromImage("texture.jpg", &TexurePixelWidth, &TexturePixelHeight, &TextureNChannels);
+	
 	// allocate memory for GLchar shader arrays
 	const char* VertexShaderSource = new GLchar[SourceCodeStringVertexShader.length() + 1];
 	const char* FragmentShaderSource = new GLchar[SourceCodeStringFragmentShader.length() + 1];
