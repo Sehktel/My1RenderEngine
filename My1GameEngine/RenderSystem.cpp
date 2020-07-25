@@ -1,5 +1,4 @@
 #include "RenderSystem.h"
-#include "stb_image.h"
 
 int RenderSystem::SetupGraphicsConext()
 {

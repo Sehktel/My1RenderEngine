@@ -50,11 +50,9 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 	unsigned char *TextureData;
 	int TexurePixelWidth, TexturePixelHeight, TextureNChannels;
 	
-	TextureData = myFileSystem.ReadRawDataFromImage("texture.jpg", &TexurePixelWidth, &TexturePixelHeight, &TextureNChannels);
+	TextureData = myFileSystem.ReadRawDataFromImage("Data/texture.jpg", &TexurePixelWidth, &TexturePixelHeight, &TextureNChannels);
 	//TextureData = stbi_load("texture.png", &TexurePixelWidth, &TexturePixelHeight, &TextureNChannels, 0);
-	if (TextureData == NULL) {
-		std::cout << "ERROR!!";
-	}
+
 	// allocate memory for GLchar shader arrays
 	const char* VertexShaderSource = new GLchar[SourceCodeStringVertexShader.length() + 1];
 	const char* FragmentShaderSource = new GLchar[SourceCodeStringFragmentShader.length() + 1];
@@ -69,7 +67,7 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 	myRenderSystem->AddTexture(&TextureID, TextureData, TexurePixelWidth, TexturePixelHeight);
 	myRenderSystem->AddShader(&VertexShaderSource, &FragmentShaderSource, &ShaderProgram);
 	myRenderSystem->AddShaderUniform(&UniformID, &ShaderProgram, UniformName);
-	//stbi_image_free(TextureData);
+	 
 
 	// RenderSystem dynamic part [Drawing and processing]
 	while (true) // drawing
