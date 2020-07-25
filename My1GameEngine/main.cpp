@@ -14,24 +14,16 @@
 void UserActionsThread(RenderSystem* myRenderSystem)
 {
 	float vertices[] = {
-		0.5f, 0.5f, 0.0f, // top right
-		0.5f, -0.5f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f, // bottom left
-		-0.5f, 0.5f, 0.0f // top left
+		// coordinates			//texture coords
+		0.5f,  0.5f,  0.0f,		1.0f, 1.0f,		// top right
+		0.5f, -0.5f,  0.0f,		1.0f, 0.0f,		// bottom right
+	   -0.5f, -0.5f,  0.0f,		0.0f, 0.0f,		// bottom left
+	   -0.5f,  0.5f,  0.0f,		0.0f, 1.0f		// top left
 	};
 
 	unsigned int indices[] = { // note that we start from 0!
 		0, 1, 3, // first triangle
 		1, 2, 3 // second triangle
-	};
-
-	float textureCoorinates[] = {
-		0.0f, 1.0f,
-		1.0f, 0.0f,
-		1.0f, 1.0f,
-		1.0f, 0.0f,
-		0.0f, 0.0f,
-		0.0f, 1.0f
 	};
 
 	// vertex objects IDs
@@ -49,16 +41,20 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 	std::string SourceCodeStringVertexShader;
 	std::string SourceCodeStringFragmentShader;
 
+	// load text of shaders from files
 	myFileSystem.ReadFromFileToString("Data/vertexshader.glsl", &SourceCodeStringVertexShader);
 	myFileSystem.ReadFromFileToString("Data/fragmentshader.glsl", &SourceCodeStringFragmentShader);
 
 	// textures
 	unsigned int TextureID;
-	unsigned char* TextureData;
+	unsigned char *TextureData;
 	int TexurePixelWidth, TexturePixelHeight, TextureNChannels;
 	
 	TextureData = myFileSystem.ReadRawDataFromImage("texture.jpg", &TexurePixelWidth, &TexturePixelHeight, &TextureNChannels);
-	
+	//TextureData = stbi_load("texture.png", &TexurePixelWidth, &TexturePixelHeight, &TextureNChannels, 0);
+	if (TextureData == NULL) {
+		std::cout << "ERROR!!";
+	}
 	// allocate memory for GLchar shader arrays
 	const char* VertexShaderSource = new GLchar[SourceCodeStringVertexShader.length() + 1];
 	const char* FragmentShaderSource = new GLchar[SourceCodeStringFragmentShader.length() + 1];
@@ -70,15 +66,19 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 
 	// RenderSystem static part
 	myRenderSystem->Add3DMesh(&MeshInfoFormatID, &MeshID, &MeshIndicesId, vertices, sizeof(vertices), indices, sizeof(indices), true);
+	myRenderSystem->AddTexture(&TextureID, TextureData, TexurePixelWidth, TexturePixelHeight);
 	myRenderSystem->AddShader(&VertexShaderSource, &FragmentShaderSource, &ShaderProgram);
 	myRenderSystem->AddShaderUniform(&UniformID, &ShaderProgram, UniformName);
+	//stbi_image_free(TextureData);
 
 	// RenderSystem dynamic part [Drawing and processing]
 	while (true) // drawing
 	{
+
 		GreenValue = sin(glfwGetTime() / 2.0f) + 0.5f;
 		myRenderSystem->BindShader(&ShaderProgram);
 		myRenderSystem->UpdateShaderUniform(&UniformID, 1.0f, GreenValue, 1.0f, 1.0f);
+		myRenderSystem->BindTexture(&TextureID);
 		myRenderSystem->Draw3DMesh(&MeshInfoFormatID, sizeof(indices)/ sizeof(indices[0]));
 		std::this_thread::sleep_for(std::chrono::milliseconds(17));
 	}
@@ -92,6 +92,8 @@ int main()
 	std::thread RenderSystemLoop(&RenderSystem::StartLoop, &myRenderSystem); // start RenderSystem
 
 	std::thread UserDrawQueryThread(UserActionsThread, &myRenderSystem); // user's query thread
+
+
 
 	UserDrawQueryThread.join();
 	RenderSystemLoop.join();	

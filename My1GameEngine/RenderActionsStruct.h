@@ -1,6 +1,9 @@
 #pragma once
 // RenderCommand enum int type of RenderSystem processed commands
-enum class RenderCommand : int { AddMesh, AddShader, DrawMesh, BindShader, AddUniform, UpdateUniform };
+enum class RenderCommand : int { DrawMesh, AddMesh,
+    AddTexture, BindTexture,
+    AddShader,  BindShader,
+    AddUniform, UpdateUniform };
 
 // exchange sturctures with RenderSystem
 // STRUCT FOR: 3d mesh STRUCT FORMAT: 3 floats xyz normalized storing in single VBO in a single VAO
@@ -104,11 +107,22 @@ struct DataUniformUpdate
 // STURCT FOR: load textures
 struct DataTexture2DLoad
 {
-    unsigned char* GraphicsTextureData;
-    int GraphicsTextureWidth;
-    int GraphicsTextureHeight;
-    int GraphicsTextureNumberOfChannels;
-};
+    unsigned int* GraphicsTextureId; // texture's Id
+    unsigned char* GraphicsTextureData; // texture's data
+    int GraphicsTexurePixelWidth; // texture's pixel width
+    int GraphicsTexturePixelHeight; // texture's pixel height
+    //GLint GraphicsTextureWrapMethod; // texture's wrap method
+    //GLint GraphicsTextureFilterMethod; // texture's filter method
 
-// STRUCT FOR: bind textures
+    DataTexture2DLoad(unsigned int* _GraphicsTextureId, unsigned char* _GraphicsTextureData,
+        int _GraphicsTexurePixelWidth, int _GraphicsTexturePixelHeight)
+    {
+        GraphicsTextureId = _GraphicsTextureId;
+        GraphicsTextureData = _GraphicsTextureData;
+        GraphicsTexurePixelWidth = _GraphicsTexurePixelWidth;
+        GraphicsTexturePixelHeight = _GraphicsTexturePixelHeight;
+        //GraphicsTextureWrapMethod = _GraphicsTextureWrapMethod;
+        //GraphicsTextureFilterMethod = _GraphicsTextureFilterMethod;
+    }
+};
 

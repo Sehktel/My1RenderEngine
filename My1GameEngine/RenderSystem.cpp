@@ -1,4 +1,5 @@
 #include "RenderSystem.h"
+#include "stb_image.h"
 
 int RenderSystem::SetupGraphicsConext()
 {
@@ -44,6 +45,66 @@ void RenderSystem::StartLoop()
 			// decode and execute comand
 			switch (_RenderCommandList.front())
 			{
+				case RenderCommand::DrawMesh:
+				{
+					// Draw mesh
+					glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+					glClear(GL_COLOR_BUFFER_BIT);
+					glBindVertexArray(*_DataDrawList.front().Graphics3DMeshVAOId); //bind vao
+					glDrawElements(GL_TRIANGLES, _DataDrawList.front().Graphics3DMeshIndicesLength, GL_UNSIGNED_INT, 0);
+					glBindVertexArray(0);
+					glfwSwapBuffers(_window);
+
+					_DataDrawList.pop();
+					_RenderCommandList.pop();
+					break;
+				}
+
+				case RenderCommand::AddTexture: 
+				{
+					// load and create a texture
+
+					glGenTextures(1, _DataTexture2DLoadList.front().GraphicsTextureId);
+					glBindTexture(GL_TEXTURE_2D, *_DataTexture2DLoadList.front().GraphicsTextureId); // all upcoming operations now have effect on this texture object
+					// set the texture wrapping parameters
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+					// set texture filtering parameters
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+					// check successful load of texture
+					if (*_DataTexture2DLoadList.front().GraphicsTextureData)
+					{
+						// load data to GPU
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _DataTexture2DLoadList.front().GraphicsTexurePixelWidth, _DataTexture2DLoadList.front().GraphicsTexturePixelHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, _DataTexture2DLoadList.front().GraphicsTextureData);
+						//int x, y, n;
+						//unsigned char* data = stbi_load("texture.png", &x, &y, &n, 0);
+						//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+						// generate mipmap for this texture
+						glGenerateMipmap(GL_TEXTURE_2D);
+						glBindTexture(GL_TEXTURE_2D, 0);
+					}
+					else
+					{
+						std::cout << "Failed to load texture" << std::endl;
+					}
+					
+					_DataTexture2DLoadList.pop(); // release data
+					_RenderCommandList.pop();
+					break;
+				}
+
+				case RenderCommand::BindTexture:
+				{
+					// bind texture
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_2D, *_DataTexture2DBindList.front()); //processing
+					
+					_DataTexture2DBindList.pop(); // release data
+					_RenderCommandList.pop();
+					break;
+				}
+
 				case RenderCommand::AddMesh :
 				{							
 					// load 3d mesh
@@ -63,10 +124,16 @@ void RenderSystem::StartLoop()
 					glBufferData(GL_ELEMENT_ARRAY_BUFFER, _Data3DMeshList.front().Graphics3DMeshSizeOfArray,
 					_Data3DMeshList.front().Graphics3DMeshIndicesPointer, GL_STATIC_DRAW);
 
-					glEnableVertexAttribArray(0); // bind that mask for first vertex atrribute (our vbo)
-					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // mask for data only FLOAT and 3 values (coordinates)
-					glBindBuffer(GL_ARRAY_BUFFER , 0); // unbind vbo
-					glBindVertexArray(0); // unbind vao
+					// stide = 5 * sizeof(float) 3 coordinates xyz + 2  texture coordinates s,t 
+					// position attribute 0th 3 float values
+					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0); // mask for data only FLOAT and 3 values (coordinates)
+					glEnableVertexAttribArray(0); // enable 0 attribute: mesh coordinates
+					// texture coordinate attribute 1st 2 float values
+					glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)) );
+					glEnableVertexAttribArray(1); // enable 1 attribute : mesh texture coordinates
+
+					//glBindBuffer(GL_ARRAY_BUFFER , 0); // unbind vbo
+					//glBindVertexArray(0); // unbind vao
 					std::cout << "successful loading 3d mesh!" << std::endl;
 
 					_RenderCommandList.pop(); // remove command from vector
@@ -134,20 +201,7 @@ void RenderSystem::StartLoop()
 					break;
 				}
 
-				case RenderCommand::DrawMesh:
-				{
-					// Draw mesh
-					glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-					glClear(GL_COLOR_BUFFER_BIT);
-					glBindVertexArray(*_DataDrawList.front().Graphics3DMeshVAOId); //bind vao
-					glDrawElements(GL_TRIANGLES, _DataDrawList.front().Graphics3DMeshIndicesLength, GL_UNSIGNED_INT, 0);
-					glBindVertexArray(0);
-					glfwSwapBuffers(_window);
 
-					_DataDrawList.pop();
-					_RenderCommandList.pop();
-					break;
-				}
 
 				case RenderCommand::BindShader:
 				{
@@ -162,7 +216,7 @@ void RenderSystem::StartLoop()
 				{
 					*_DataUniformLoadList.front().GraphicsUniformId = glGetUniformLocation(*_DataUniformLoadList.front().GraphicsShaderProgramId,
 						_DataUniformLoadList.front().GraphicsUniformName);
-						
+
 					_DataUniformLoadList.pop();
 					_RenderCommandList.pop();
 					break;
@@ -173,7 +227,7 @@ void RenderSystem::StartLoop()
 					glUniform4f(*_DataUniformUpdateList.front().GraphicsUniformId,
 						_DataUniformUpdateList.front().GraphicsUniformValueFloat0, _DataUniformUpdateList.front().GraphicsUniformValueFloat1,
 						_DataUniformUpdateList.front().GraphicsUniformValueFloat2, _DataUniformUpdateList.front().GraphicsUniformValueFloat3);
-						
+					
 					_DataUniformUpdateList.pop();
 					_RenderCommandList.pop();
 					break;
@@ -182,6 +236,7 @@ void RenderSystem::StartLoop()
 
 			FlagBusyMemory = false; // unlock memory
 		}
+
 	}
 	glfwTerminate();
 }
@@ -213,7 +268,7 @@ void RenderSystem::Add3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* Gr
 		Graphics3DMeshPointer, Graphics3DMeshSizeOfArray,
 		Graphics3DMeshIndicesPointer, Graphics3DMeshIndicesSizeOfArray,
 		GraphicsGenerateNewVAO);
-	_RenderCommandList.emplace(RenderCommand::AddMesh); // call constuctor and push into render command vector request to add mesh
+	_RenderCommandList.push(RenderCommand::AddMesh); // call constuctor and push into render command vector request to add mesh
 	
 	FlagBusyMemory = false; // release flag busy memory
 }
@@ -227,7 +282,7 @@ void RenderSystem::AddShader(const char** GraphicsVertexShaderTextPointer, const
 
 	std::cout << "AddShader function" << std::endl;
 	_DataShaderLoadList.emplace(GraphicsVertexShaderTextPointer, GraphicsFragmentShaderTextPointer, GraphicsShaderProgramId);
-	_RenderCommandList.emplace(RenderCommand::AddShader);
+	_RenderCommandList.push(RenderCommand::AddShader);
 	FlagBusyMemory = false; // release flag busy memory
 }
 
@@ -239,7 +294,7 @@ void RenderSystem::Draw3DMesh(unsigned int* Graphics3DMeshVAOId, int Graphics3DM
 	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
 	_DataDrawList.emplace(Graphics3DMeshVAOId, Graphics3DMeshIndicesLength);
-	_RenderCommandList.emplace(RenderCommand::DrawMesh);
+	_RenderCommandList.push(RenderCommand::DrawMesh);
 	FlagBusyMemory = false; // release flag busy memory
 }
 
@@ -251,7 +306,7 @@ void RenderSystem::BindShader(unsigned int* GraphicsShaderProgramId)
 	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
 	_DataShaderBindList.emplace(GraphicsShaderProgramId); // call constructor and push pointer of binded program to render system vector of struct
-	_RenderCommandList.emplace(RenderCommand::BindShader);
+	_RenderCommandList.push(RenderCommand::BindShader);
 	FlagBusyMemory = false; // release flag busy memory
 }
 
@@ -263,7 +318,7 @@ void RenderSystem::AddShaderUniform(unsigned int* GraphicsUniformId, unsigned in
 	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
 	_DataUniformLoadList.emplace(GraphicsUniformId, GraphicsShaderProgramId, GraphicsUniformName);
-	_RenderCommandList.emplace(RenderCommand::AddUniform);
+	_RenderCommandList.push(RenderCommand::AddUniform);
 	FlagBusyMemory = false; // release flag busy memory
 }
 
@@ -275,10 +330,33 @@ void RenderSystem::UpdateShaderUniform(unsigned int* GraphicsUniformId, float Ve
 	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
 	_DataUniformUpdateList.emplace(GraphicsUniformId, VectorX, VectorY, VectorZ, VectorW);
-	_RenderCommandList.emplace(RenderCommand::UpdateUniform);
+	_RenderCommandList.push(RenderCommand::UpdateUniform);
 	FlagBusyMemory = false; // release flag busy memory
 }
 
+void RenderSystem::AddTexture(unsigned int* GraphicsTextureId, unsigned char* GraphicsTextureData, int GraphicsTexurePixelWidth, int GraphicsTexturePixelHeight)
+{
+	while (FlagBusyMemory) // wait for memory access flag
+	{
+	}
+	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
+	std::cout << "AddTexture function" << std::endl;
+	_DataTexture2DLoadList.emplace(GraphicsTextureId, GraphicsTextureData, GraphicsTexurePixelWidth, GraphicsTexturePixelHeight);
+		//GraphicsTextureWrapMethod, GraphicsTextureFilterMethod);
+	_RenderCommandList.push(RenderCommand::AddTexture);
 
+	FlagBusyMemory = false; // release flag busy memory
+}
 
+void RenderSystem::BindTexture(unsigned int *TextureId)
+{
+	while (FlagBusyMemory) // wait for memory access flag
+	{
+	}
+	FlagBusyMemory = true; // set up flag busy memory reserve memory for load commands and data to RenderSystem
 
+	_DataTexture2DBindList.emplace(TextureId);
+	_RenderCommandList.push(RenderCommand::BindTexture);
+
+	FlagBusyMemory = false; // release flag busy memory
+}

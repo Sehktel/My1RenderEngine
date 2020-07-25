@@ -29,5 +29,5 @@ int FileSystem::ReadFromFileToString(const char* PathToFile, std::string* Result
 
 unsigned char* FileSystem::ReadRawDataFromImage(const char* PathToImage, int* ImageWidth, int* ImageHeight, int* NumberOfImagesChannel)
 {
-    return stbi_load(PathToImage, ImageWidth, ImageWidth, NumberOfImagesChannel, 0);
+    return stbi_load(PathToImage, ImageWidth, ImageHeight, NumberOfImagesChannel, 0);
 }
