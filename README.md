@@ -1,7 +1,7 @@
 # My1RenderEngine
 It's a test Render Engine based on OpenGL API and std::threads.
 
-Install process from Git console
+Installation process from Git console
 
 1) git clone --recursive https://github.com/joy7701/My1RenderEngine.git  [recursive flag will cause downloading external libraries]
 2) mkdir bin && cd bin [directory for project and binary files]
