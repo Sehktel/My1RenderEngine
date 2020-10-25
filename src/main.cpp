@@ -65,13 +65,29 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 
 	float GreenValue;
 
+	unsigned int VAO_id;
+	unsigned int VBO_id;
+	unsigned int EBO_id;
+	//points
+
+	float points[] = {
+		// coordinates			//texture coords
+		0.7f,  0.7f,  0.0f,		1.0f, 1.0f,		// top right
+		0.7f,  0.6f,  0.0f,		1.0f, 0.0f,		// bottom right
+		0.6f,  0.6f,  0.0f,		0.0f, 0.0f,		// bottom left
+	    0.6f,  0.7f,  0.0f,		0.0f, 1.0f		// top left
+	};
+	
+	// indices are the same
+
 	// RenderSystem static part
 	myRenderSystem->Add3DMesh(&MeshInfoFormatID, &MeshID, &MeshIndicesId, vertices, sizeof(vertices), indices, sizeof(indices), true);
+	myRenderSystem->Add3DMesh(&VAO_id, &VBO_id, &EBO_id, points, sizeof(points), indices, sizeof(indices), true);
+
 	myRenderSystem->AddTexture(&TextureID, TextureData, TexurePixelWidth, TexturePixelHeight);
 	myRenderSystem->AddShader(&VertexShaderSource, &FragmentShaderSource, &ShaderProgram);
 	myRenderSystem->AddShaderUniform(&UniformID, &ShaderProgram, UniformName);
-	 
-
+	
 	// RenderSystem dynamic part [Drawing and processing]
 	while (true) // drawing
 	{
@@ -80,8 +96,10 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 		GreenValue = sin(glfwGetTime() / 2.0f) + 0.5f;
 		myRenderSystem->BindShader(&ShaderProgram);
 		myRenderSystem->UpdateShaderUniform(&UniformID, 1.0f, GreenValue, 1.0f, 1.0f);
+
 		myRenderSystem->BindTexture(&TextureID);
-		myRenderSystem->Draw3DMesh(&MeshInfoFormatID, sizeof(indices)/ sizeof(indices[0]));
+		myRenderSystem->Draw3DMesh(&MeshInfoFormatID, sizeof(indices)/ sizeof(indices[0]), false);
+		myRenderSystem->Draw3DMesh(&VAO_id, sizeof(indices) / sizeof(indices[0]), true);
 	}
 }
 

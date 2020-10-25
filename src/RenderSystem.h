@@ -18,6 +18,7 @@ extern std::mutex mtx;
 class RenderSystem
 {
 	public:
+		GLFWwindow* _window;
 		RenderSystem();
 		int SetupGraphicsConext(); // let glfw create window
 		void StartLoop(); // start our Render system
@@ -29,7 +30,7 @@ class RenderSystem
 			bool GraphicsGenerateNewVAO);
 
 		// Uses glDrawElements
-		void Draw3DMesh(const unsigned int* Graphics3DMeshVAOId, const int Graphics3DMeshIndicesLength); // It must be called each time for drawing
+		void Draw3DMesh(const unsigned int* Graphics3DMeshVAOId, const int Graphics3DMeshIndicesLength, bool GraphicsSwapBuffer); // It must be called each time for drawing
 
 		// Functions to work with shaders [add, bind, AddUniform, UpdateUniform]
 		void AddShader(const char** GraphicsVertexShaderTextPointer, const char** GraphicsFragmentShaderTextPointer, unsigned int* GraphicsShaderProgramId);
@@ -42,9 +43,11 @@ class RenderSystem
 		void AddTexture(unsigned int* GraphicsTextureId, unsigned char* GraphicsTextureData, int GraphicsTexurePixelWidth, int GraphicsTexturePixelHeight);
 		void BindTexture(unsigned int *TextureId);
 
+		// swap OpenGL buffer
+		void SwapBuffer();
+		void ClearScreen();
 	private:
 		// GLFW data
-		GLFWwindow* _window;
 		static void  framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 		// command queue to RenderSystem

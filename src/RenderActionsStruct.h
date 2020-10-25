@@ -3,7 +3,7 @@
 enum class RenderCommand : int { DrawMesh, AddMesh,
     AddTexture, BindTexture,
     AddShader,  BindShader,
-    AddUniform, UpdateUniform };
+    AddUniform, UpdateUniform, ClearScreen, SwapBuffer};
 
 // exchange sturctures with RenderSystem
 // STRUCT FOR: 3d mesh STRUCT FORMAT: 3 floats xyz normalized storing in single VBO in a single VAO
@@ -16,7 +16,7 @@ struct Data3DMesh
     unsigned long long Graphics3DMeshSizeOfArray; // size of 3d mesh in bytes
     unsigned int* Graphics3DMeshIndicesPointer; // pointer at begin of mesh indices
     unsigned long long Graphics3DMeshIndicesSizeOfArray; // size of 3d mesh indices array in bytes
-    bool GraphicsGenerateNewVAO; // flag to generate new VAO
+    bool GraphicsGenerateNewVAO; // flag to swap buffer
 
     Data3DMesh(unsigned int* _Graphics3DMeshVAOId, unsigned int* _Graphics3DMeshEBOId, unsigned int* _Graphics3DMeshVBOId,
         float* _Graphics3DMeshPointer, unsigned long long _Graphics3DMeshSizeOfArray,
@@ -43,11 +43,13 @@ struct DataDraw
 {
     const unsigned int* Graphics3DMeshVAOId; // VAO of mesh
     int Graphics3DMeshIndicesLength; // length of index array; count of elements
+    bool GraphicsSwapBuffer; // flag to swap buffers
 
-    DataDraw(const unsigned int* _Graphics3DMeshVAOId, int _Graphics3DMeshIndicesLength)
+    DataDraw(const unsigned int* _Graphics3DMeshVAOId, int _Graphics3DMeshIndicesLength, bool _GraphicsSwapBuffer)
     {
         Graphics3DMeshVAOId = _Graphics3DMeshVAOId;
         Graphics3DMeshIndicesLength = _Graphics3DMeshIndicesLength;
+        GraphicsSwapBuffer = _GraphicsSwapBuffer;
     }
 };
 

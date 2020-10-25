@@ -1,5 +1,11 @@
 #include "RenderSystem.h"
 
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwDestroyWindow(window);
+}
+
 int RenderSystem::SetupGraphicsConext()
 {
 	// 1) initialize glfw
@@ -17,13 +23,16 @@ int RenderSystem::SetupGraphicsConext()
 
 void RenderSystem::StartLoop()
 {
+
 	_window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
 	if (!_window)
 	{
 		glfwTerminate();
 	}
+
+	glfwSetKeyCallback(_window, key_callback);
 	/* Make the window's context current */
-	glfwMakeContextCurrent(_window);
+		glfwMakeContextCurrent(_window);
 
 	// 2) initialize glad
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -31,17 +40,15 @@ void RenderSystem::StartLoop()
 	}
 	glfwSetFramebufferSizeCallback(_window, framebuffer_size_callback);
 	glfwMakeContextCurrent(_window);
+	
 	//render loop
 	while (!glfwWindowShouldClose(_window))
 	{
-		glfwPollEvents();
 
 		// check vector for Actions
 		if (!_RenderCommandList.empty() ) // if there are any requests for manipulate with render
 		{
 			std::lock_guard<std::mutex> lock{ mtx };
-
-			std::cout << "RenderSystem Thread" << std::endl;
 
 			// decode and execute comand
 			switch (_RenderCommandList.front())
@@ -49,12 +56,16 @@ void RenderSystem::StartLoop()
 				case RenderCommand::DrawMesh:
 				{
 					// Draw mesh
-					glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-					glClear(GL_COLOR_BUFFER_BIT);
+					//glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+					//glClear(GL_COLOR_BUFFER_BIT);
 					glBindVertexArray(*_DataDrawList.front().Graphics3DMeshVAOId); //bind vao
 					glDrawElements(GL_TRIANGLES, _DataDrawList.front().Graphics3DMeshIndicesLength, GL_UNSIGNED_INT, 0);
-					glBindVertexArray(0);
-					glfwSwapBuffers(_window);
+					
+					// swap if we need
+					if (_DataDrawList.front().GraphicsSwapBuffer)
+						glfwSwapBuffers(_window);
+					
+					//glBindVertexArray(0);
 
 					_DataDrawList.pop();
 					_RenderCommandList.pop();
@@ -64,7 +75,6 @@ void RenderSystem::StartLoop()
 				case RenderCommand::AddTexture: 
 				{
 					// load and create a texture
-
 					glGenTextures(1, _DataTexture2DLoadList.front().GraphicsTextureId);
 					glBindTexture(GL_TEXTURE_2D, *_DataTexture2DLoadList.front().GraphicsTextureId); // all upcoming operations now have effect on this texture object
 					// set the texture wrapping parameters
@@ -74,13 +84,11 @@ void RenderSystem::StartLoop()
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 					// check successful load of texture
-					//if (*_DataTexture2DLoadList.front().GraphicsTextureData)
-					//{
+					/*if (*_DataTexture2DLoadList.front().GraphicsTextureData)
+					{
+					*/
 						// load data to GPU
 						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _DataTexture2DLoadList.front().GraphicsTexurePixelWidth, _DataTexture2DLoadList.front().GraphicsTexturePixelHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, _DataTexture2DLoadList.front().GraphicsTextureData);
-						//int x, y, n;
-						//unsigned char* data = stbi_load("texture.png", &x, &y, &n, 0);
-						//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 						// generate mipmap for this texture
 						glGenerateMipmap(GL_TEXTURE_2D);
 						glBindTexture(GL_TEXTURE_2D, 0);
@@ -90,7 +98,7 @@ void RenderSystem::StartLoop()
 						std::cout << "Failed to load texture" << std::endl;
 					}
 					*/
-					_DataTexture2DLoadList.pop(); // release data
+					_DataTexture2DLoadList.pop();
 					_RenderCommandList.pop();
 					break;
 				}
@@ -125,7 +133,7 @@ void RenderSystem::StartLoop()
 					glBufferData(GL_ELEMENT_ARRAY_BUFFER, _Data3DMeshList.front().Graphics3DMeshSizeOfArray,
 					_Data3DMeshList.front().Graphics3DMeshIndicesPointer, GL_STATIC_DRAW);
 
-					// stide = 5 * sizeof(float) 3 coordinates xyz + 2  texture coordinates s,t 
+					// stride = 5 * sizeof(float) 3 coordinates xyz + 2  texture coordinates s,t 
 					// position attribute 0th 3 float values
 					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0); // mask for data only FLOAT and 3 values (coordinates)
 					glEnableVertexAttribArray(0); // enable 0 attribute: mesh coordinates
@@ -133,8 +141,8 @@ void RenderSystem::StartLoop()
 					glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)) );
 					glEnableVertexAttribArray(1); // enable 1 attribute : mesh texture coordinates
 
-					//glBindBuffer(GL_ARRAY_BUFFER , 0); // unbind vbo
-					//glBindVertexArray(0); // unbind vao
+					glBindBuffer(GL_ARRAY_BUFFER , 0); // unbind vbo
+					glBindVertexArray(0); // unbind vao
 					std::cout << "successful loading 3d mesh!" << std::endl;
 
 					_RenderCommandList.pop(); // remove command from vector
@@ -233,11 +241,25 @@ void RenderSystem::StartLoop()
 					_RenderCommandList.pop();
 					break;
 				}
+
+				case RenderCommand::ClearScreen:
+				{
+					glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+					glClear(GL_COLOR_BUFFER_BIT);
+					break;
+				}
+
+				case RenderCommand::SwapBuffer:
+				{
+					glfwSwapBuffers(_window);
+					break;
+				}
 			}
 		}
-
+		glfwPollEvents();
 	}
 	glfwTerminate();
+
 }
 
 RenderSystem::RenderSystem()
@@ -271,9 +293,9 @@ void RenderSystem::AddShader(const char** GraphicsVertexShaderTextPointer, const
 	_RenderCommandList.push(RenderCommand::AddShader);
 }
 
-void RenderSystem::Draw3DMesh(const unsigned int* Graphics3DMeshVAOId, const int Graphics3DMeshIndicesLength)
+void RenderSystem::Draw3DMesh(const unsigned int* Graphics3DMeshVAOId, const int Graphics3DMeshIndicesLength, bool GraphicsSwapBuffer)
 {
-	_DataDrawList.emplace(Graphics3DMeshVAOId, Graphics3DMeshIndicesLength);
+	_DataDrawList.emplace(Graphics3DMeshVAOId, Graphics3DMeshIndicesLength, GraphicsSwapBuffer);
 	_RenderCommandList.push(RenderCommand::DrawMesh);
 }
 
@@ -307,4 +329,15 @@ void RenderSystem::BindTexture(unsigned int *TextureId)
 {
 	_DataTexture2DBindList.emplace(TextureId);
 	_RenderCommandList.push(RenderCommand::BindTexture);
+}
+
+void RenderSystem::SwapBuffer()
+{
+	std::cout << "Swap buffer query" << std::endl;
+	_RenderCommandList.push(RenderCommand::SwapBuffer);
+}
+
+void RenderSystem::ClearScreen()
+{
+	_RenderCommandList.push(RenderCommand::ClearScreen);
 }
