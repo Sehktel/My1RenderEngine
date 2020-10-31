@@ -30,22 +30,27 @@ class RenderSystem
 			bool GraphicsGenerateNewVAO);
 
 		// Uses glDrawElements
-		void Draw3DMesh(const unsigned int* Graphics3DMeshVAOId, const int Graphics3DMeshIndicesLength, bool GraphicsSwapBuffer); // It must be called each time for drawing
+		void Draw3DMesh(const unsigned int* Graphics3DMeshVAOId, const int Graphics3DMeshIndicesLength, bool GraphicsSwapBuffer, bool GraphicsClearBuffer); // It must be called each time for drawing
 
 		// Functions to work with shaders [add, bind, AddUniform, UpdateUniform]
 		void AddShader(const char** GraphicsVertexShaderTextPointer, const char** GraphicsFragmentShaderTextPointer, unsigned int* GraphicsShaderProgramId);
 		void BindShader(unsigned int* GraphicsShaderProgramId);
 
-		void AddShaderUniform(unsigned int* GraphicsUniformId, unsigned int* GraphicsShaderProgramId, const char* GraphicsUniformName);
-		void UpdateShaderUniform(unsigned int* GraphicsUniformId, float VectorX, float VectorY, float VectorZ, float VectorW );
-		
+		// uniforms functions
+		// 4f uniform
+		void AddShaderUniform4f(unsigned int* GraphicsUniformId, unsigned int* GraphicsShaderProgramId, const char* GraphicsUniformName);
+		void UpdateShaderUniform4f(unsigned int* GraphicsUniformId, float VectorX, float VectorY, float VectorZ, float VectorW );
+		// mat4f uniform
+		void AddShaderUniformMat4f(GLint* GraphicsUniformId, unsigned int* GraphicsShaderProgramId, const char* GraphicsUniformName);
+		void UpdateShaderUniformMat4f(GLint* GraphicsUniformId,	const GLfloat* GraphicsUniformMat4fPtr);
+
 		//Functions to work with textures 
 		void AddTexture(unsigned int* GraphicsTextureId, unsigned char* GraphicsTextureData, int GraphicsTexurePixelWidth, int GraphicsTexturePixelHeight);
 		void BindTexture(unsigned int *TextureId);
 
-		// swap OpenGL buffer
-		void SwapBuffer();
-		void ClearScreen();
+		// OpenGL config functions glEnable
+		void EnableDepthTest();
+
 	private:
 		// GLFW data
 		static void  framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -64,8 +69,11 @@ class RenderSystem
 		std::queue<DataDraw> _DataDrawList; // queue contains all drawable data
 
 		// uniform queues for load uniforms and update theirs values
-		std::queue<DataUniformLoad> _DataUniformLoadList; // queue contains all uniforms for loading
-		std::queue<DataUniformUpdate> _DataUniformUpdateList; //  queue contains uniforms Ids and values for update
+		std::queue<DataUniformLoad4f> _DataUniformLoadList4f; // queue contains all 4f uniforms for loading
+		std::queue<DataUniformUpdate4f> _DataUniformUpdateList4f; //  queue contains 4f uniforms Ids and values for update
+
+		std::queue<DataUniformLoadMat4f> _DataUniformLoadListMat4f; // queue contains all Mat4f uniforms for loading
+		std::queue<DataUniformUpdateMat4f> _DataUniformUpdateListMat4f; // queue contains all Mat4f unifors Ids and values for update
 		
 		// queue for bind and set up textures
 		std::queue<unsigned int*> _DataTexture2DBindList; // queue contains all textures for binding

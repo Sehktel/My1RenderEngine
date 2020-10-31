@@ -2,7 +2,10 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <stb_image.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "RenderSystem.h"
 #include "FileSystem.h"
@@ -36,9 +39,29 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 	// shader program ID	
 	unsigned int ShaderProgram; // our shader ID in openGL space
 
-	//uniform ID
+	//uniforms
 	unsigned int UniformID;
 	char UniformName[] = "ourColor";
+
+	GLint ModelMatrixID;
+	char ModelMatrixName[] = "model";
+	GLint ViewMatrixID;
+	char ViewMatrixName[] = "view";
+	GLint ProjectionMatrixID;
+	char ProjectionMatrixName[] = "projection";
+
+
+	// MVP matrices 
+	
+	glm::mat4 model = glm::mat4{ 1.0f };
+	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	glm::mat4 view = glm::mat4{ 1.0f };
+	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+	glm::mat4 projection;
+	projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+
 
 	FileSystem myFileSystem; // create file system
 	std::string SourceCodeStringVertexShader;
@@ -86,8 +109,15 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 
 	myRenderSystem->AddTexture(&TextureID, TextureData, TexurePixelWidth, TexturePixelHeight);
 	myRenderSystem->AddShader(&VertexShaderSource, &FragmentShaderSource, &ShaderProgram);
-	myRenderSystem->AddShaderUniform(&UniformID, &ShaderProgram, UniformName);
-	
+	myRenderSystem->AddShaderUniform4f(&UniformID, &ShaderProgram, UniformName);
+
+	// Load MVP matrices
+	myRenderSystem->AddShaderUniformMat4f(&ModelMatrixID, &ShaderProgram, ModelMatrixName);
+	myRenderSystem->AddShaderUniformMat4f(&ViewMatrixID, &ShaderProgram, ViewMatrixName);
+	myRenderSystem->AddShaderUniformMat4f(&ProjectionMatrixID, &ShaderProgram, ProjectionMatrixName);
+
+	myRenderSystem->EnableDepthTest();
+
 	// RenderSystem dynamic part [Drawing and processing]
 	while (true) // drawing
 	{
@@ -95,11 +125,17 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 		std::lock_guard<std::mutex> lock{ mtx };
 		GreenValue = sin(glfwGetTime() / 2.0f) + 0.5f;
 		myRenderSystem->BindShader(&ShaderProgram);
-		myRenderSystem->UpdateShaderUniform(&UniformID, 1.0f, GreenValue, 1.0f, 1.0f);
+		myRenderSystem->UpdateShaderUniform4f(&UniformID, 1.0f, GreenValue, 1.0f, 1.0f);
+
+		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f) / 1000, glm::vec3(0.5f, 1.0f, 0.0f));
+
+		myRenderSystem->UpdateShaderUniformMat4f(&ModelMatrixID, glm::value_ptr(model));
+		myRenderSystem->UpdateShaderUniformMat4f(&ViewMatrixID, glm::value_ptr(view));
+		myRenderSystem->UpdateShaderUniformMat4f(&ProjectionMatrixID, glm::value_ptr(projection));
 
 		myRenderSystem->BindTexture(&TextureID);
-		myRenderSystem->Draw3DMesh(&MeshInfoFormatID, sizeof(indices)/ sizeof(indices[0]), false);
-		myRenderSystem->Draw3DMesh(&VAO_id, sizeof(indices) / sizeof(indices[0]), true);
+		myRenderSystem->Draw3DMesh(&MeshInfoFormatID, sizeof(indices)/ sizeof(indices[0]), false, true);
+		myRenderSystem->Draw3DMesh(&VAO_id, sizeof(indices) / sizeof(indices[0]), true, false);
 	}
 }
 

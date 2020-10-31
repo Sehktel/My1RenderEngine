@@ -36,4 +36,8 @@ target_link_libraries(game PRIVATE glad)
 
 #stb
 include_directories(${CMAKE_SOURCE_DIR}/lib/stb_image)
-link_directories(${CMAKE_SOURCE_DIR}/lib/stb_image) 
+link_directories(${CMAKE_SOURCE_DIR}/lib/stb_image)
+
+#glm
+add_subdirectory(lib/glm EXCLUDE_FROM_ALL)
+include_directories(lib/glm)

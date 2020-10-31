@@ -3,7 +3,10 @@
 enum class RenderCommand : int { DrawMesh, AddMesh,
     AddTexture, BindTexture,
     AddShader,  BindShader,
-    AddUniform, UpdateUniform, ClearScreen, SwapBuffer};
+    AddUniform4f, AddUniformMat4f,
+    UpdateUniform4f, UpdateUniformMat4f,
+    EnableDepthTest
+};
 
 // exchange sturctures with RenderSystem
 // STRUCT FOR: 3d mesh STRUCT FORMAT: 3 floats xyz normalized storing in single VBO in a single VAO
@@ -44,12 +47,14 @@ struct DataDraw
     const unsigned int* Graphics3DMeshVAOId; // VAO of mesh
     int Graphics3DMeshIndicesLength; // length of index array; count of elements
     bool GraphicsSwapBuffer; // flag to swap buffers
+    bool GraphicsClearBuffer; // flag to clear buffer
 
-    DataDraw(const unsigned int* _Graphics3DMeshVAOId, int _Graphics3DMeshIndicesLength, bool _GraphicsSwapBuffer)
+    DataDraw(const unsigned int* _Graphics3DMeshVAOId, int _Graphics3DMeshIndicesLength, bool _GraphicsSwapBuffer, bool _GraphicsClearBuffer)
     {
         Graphics3DMeshVAOId = _Graphics3DMeshVAOId;
         Graphics3DMeshIndicesLength = _Graphics3DMeshIndicesLength;
         GraphicsSwapBuffer = _GraphicsSwapBuffer;
+        GraphicsClearBuffer = _GraphicsClearBuffer;
     }
 };
 
@@ -70,14 +75,14 @@ struct DataShaderLoad
 // STRUCT FOR: Bind shader don't need
 
 
-// STRUCT FOR: load uniform for Shader Program and associate value with name 
-struct DataUniformLoad
+// STRUCT FOR: load uniform4f for Shader Program and associate value with name 
+struct DataUniformLoad4f
 {
     unsigned int* GraphicsUniformId; // id [location] of the uniform
     unsigned int* GraphicsShaderProgramId;// program pointer
     const char* GraphicsUniformName; // Uniform Name in shader program
 
-    DataUniformLoad(unsigned int* _GraphicsUniformId, unsigned int* _GraphicsShaderProgramId, const char* _GraphicsUniformName)
+    DataUniformLoad4f(unsigned int* _GraphicsUniformId, unsigned int* _GraphicsShaderProgramId, const char* _GraphicsUniformName)
     {
         GraphicsUniformId = _GraphicsUniformId;
         GraphicsShaderProgramId = _GraphicsShaderProgramId;
@@ -86,8 +91,8 @@ struct DataUniformLoad
 };
 
 
-// STRUCT FOR: update uniform value 
-struct DataUniformUpdate
+// STRUCT FOR: update uniform4f value 
+struct DataUniformUpdate4f
 {
     unsigned int* GraphicsUniformId; // id [location] of the uniform
     float GraphicsUniformValueFloat0; // 0 float value of updatable uniform 
@@ -95,7 +100,7 @@ struct DataUniformUpdate
     float GraphicsUniformValueFloat2; // 2 float value of updatable uniform 
     float GraphicsUniformValueFloat3; // 3 float value of updatable uniform
 
-    DataUniformUpdate(unsigned int* _GraphicsUniformId, float _GraphicsUniformValueFloat0, float _GraphicsUniformValueFloat1,
+    DataUniformUpdate4f(unsigned int* _GraphicsUniformId, float _GraphicsUniformValueFloat0, float _GraphicsUniformValueFloat1,
         float _GraphicsUniformValueFloat2, float _GraphicsUniformValueFloat3)
     {
         GraphicsUniformId = _GraphicsUniformId;
@@ -105,6 +110,34 @@ struct DataUniformUpdate
         GraphicsUniformValueFloat3 = _GraphicsUniformValueFloat3;
     }
 };
+
+// STRUCT FOR: load Mat4f for Shader Program and associate value with name 
+struct DataUniformLoadMat4f
+{
+    GLint* GraphicsUniformId; // id [location] of the uniform
+    unsigned int* GraphicsShaderProgramId;// program pointer
+    const char* GraphicsUniformName; // Uniform Name in shader program
+    DataUniformLoadMat4f(GLint* _GraphicsUniformId, unsigned int* _GraphicsShaderProgramId, const char* _GraphicsUniformName)
+    {
+        GraphicsUniformId = _GraphicsUniformId;
+        GraphicsShaderProgramId = _GraphicsShaderProgramId;
+        GraphicsUniformName = _GraphicsUniformName;
+    }
+};
+
+
+// STRUCT FOR: update uniform4f value 
+struct DataUniformUpdateMat4f
+{
+    GLint* GraphicsUniformId; // id [location] of the uniform
+    const GLfloat* GraphicsUniformMat4fPtr; // Mat4f glm ptr
+    DataUniformUpdateMat4f(GLint* _GraphicsUniformId, const GLfloat* _GraphicsUniformMat4fPtr)
+    {
+        GraphicsUniformId = _GraphicsUniformId;
+        GraphicsUniformMat4fPtr = _GraphicsUniformMat4fPtr;
+    }
+};
+
 
 // STURCT FOR: load textures
 struct DataTexture2DLoad

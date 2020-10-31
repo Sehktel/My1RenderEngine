@@ -44,7 +44,6 @@ void RenderSystem::StartLoop()
 	//render loop
 	while (!glfwWindowShouldClose(_window))
 	{
-
 		// check vector for Actions
 		if (!_RenderCommandList.empty() ) // if there are any requests for manipulate with render
 		{
@@ -56,8 +55,14 @@ void RenderSystem::StartLoop()
 				case RenderCommand::DrawMesh:
 				{
 					// Draw mesh
-					//glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-					//glClear(GL_COLOR_BUFFER_BIT);
+
+					// clear screen if we need
+					if (_DataDrawList.front().GraphicsClearBuffer)
+					{
+						glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+						glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+					}
+
 					glBindVertexArray(*_DataDrawList.front().Graphics3DMeshVAOId); //bind vao
 					glDrawElements(GL_TRIANGLES, _DataDrawList.front().Graphics3DMeshIndicesLength, GL_UNSIGNED_INT, 0);
 					
@@ -221,37 +226,51 @@ void RenderSystem::StartLoop()
 					break;
 				}
 
-				case RenderCommand::AddUniform:
+				case RenderCommand::AddUniform4f:
 				{
-					*_DataUniformLoadList.front().GraphicsUniformId = glGetUniformLocation(*_DataUniformLoadList.front().GraphicsShaderProgramId,
-						_DataUniformLoadList.front().GraphicsUniformName);
+					*_DataUniformLoadList4f.front().GraphicsUniformId = glGetUniformLocation(*_DataUniformLoadList4f.front().GraphicsShaderProgramId,
+						_DataUniformLoadList4f.front().GraphicsUniformName);
 
-					_DataUniformLoadList.pop();
+					_DataUniformLoadList4f.pop();
 					_RenderCommandList.pop();
 					break;
 				}
 
-				case RenderCommand::UpdateUniform:
+				case RenderCommand::UpdateUniform4f:
 				{
-					glUniform4f(*_DataUniformUpdateList.front().GraphicsUniformId,
-						_DataUniformUpdateList.front().GraphicsUniformValueFloat0, _DataUniformUpdateList.front().GraphicsUniformValueFloat1,
-						_DataUniformUpdateList.front().GraphicsUniformValueFloat2, _DataUniformUpdateList.front().GraphicsUniformValueFloat3);
+					glUniform4f(*_DataUniformUpdateList4f.front().GraphicsUniformId,
+						_DataUniformUpdateList4f.front().GraphicsUniformValueFloat0, _DataUniformUpdateList4f.front().GraphicsUniformValueFloat1,
+						_DataUniformUpdateList4f.front().GraphicsUniformValueFloat2, _DataUniformUpdateList4f.front().GraphicsUniformValueFloat3);
 					
-					_DataUniformUpdateList.pop();
+					_DataUniformUpdateList4f.pop();
+					_RenderCommandList.pop();
+					break;
+				}
+				case RenderCommand::AddUniformMat4f:
+				{
+					*_DataUniformLoadListMat4f.front().GraphicsUniformId = glGetUniformLocation(*_DataUniformLoadListMat4f.front().GraphicsShaderProgramId,
+						_DataUniformLoadListMat4f.front().GraphicsUniformName);
+
+					_DataUniformLoadListMat4f.pop();
 					_RenderCommandList.pop();
 					break;
 				}
 
-				case RenderCommand::ClearScreen:
+				case RenderCommand::UpdateUniformMat4f:
 				{
-					glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-					glClear(GL_COLOR_BUFFER_BIT);
+					glUniformMatrix4fv(*_DataUniformUpdateListMat4f.front().GraphicsUniformId,
+						1, GL_FALSE,
+						_DataUniformUpdateListMat4f.front().GraphicsUniformMat4fPtr);
+					
+					_DataUniformUpdateListMat4f.pop();
+					_RenderCommandList.pop();
 					break;
 				}
 
-				case RenderCommand::SwapBuffer:
+				case RenderCommand::EnableDepthTest:
 				{
-					glfwSwapBuffers(_window);
+					glEnable(GL_DEPTH_TEST);
+					_RenderCommandList.pop();
 					break;
 				}
 			}
@@ -293,9 +312,9 @@ void RenderSystem::AddShader(const char** GraphicsVertexShaderTextPointer, const
 	_RenderCommandList.push(RenderCommand::AddShader);
 }
 
-void RenderSystem::Draw3DMesh(const unsigned int* Graphics3DMeshVAOId, const int Graphics3DMeshIndicesLength, bool GraphicsSwapBuffer)
+void RenderSystem::Draw3DMesh(const unsigned int* Graphics3DMeshVAOId, const int Graphics3DMeshIndicesLength, bool GraphicsSwapBuffer, bool GraphicsClearBuffer)
 {
-	_DataDrawList.emplace(Graphics3DMeshVAOId, Graphics3DMeshIndicesLength, GraphicsSwapBuffer);
+	_DataDrawList.emplace(Graphics3DMeshVAOId, Graphics3DMeshIndicesLength, GraphicsSwapBuffer, GraphicsClearBuffer);
 	_RenderCommandList.push(RenderCommand::DrawMesh);
 }
 
@@ -305,16 +324,28 @@ void RenderSystem::BindShader(unsigned int* GraphicsShaderProgramId)
 	_RenderCommandList.push(RenderCommand::BindShader);
 }
 
-void RenderSystem::AddShaderUniform(unsigned int* GraphicsUniformId, unsigned int* GraphicsShaderProgramId, const char* GraphicsUniformName)
+void RenderSystem::AddShaderUniform4f(unsigned int* GraphicsUniformId, unsigned int* GraphicsShaderProgramId, const char* GraphicsUniformName)
 {
-	_DataUniformLoadList.emplace(GraphicsUniformId, GraphicsShaderProgramId, GraphicsUniformName);
-	_RenderCommandList.push(RenderCommand::AddUniform);
+	_DataUniformLoadList4f.emplace(GraphicsUniformId, GraphicsShaderProgramId, GraphicsUniformName);
+	_RenderCommandList.push(RenderCommand::AddUniform4f);
 }
 
-void RenderSystem::UpdateShaderUniform(unsigned int* GraphicsUniformId, float VectorX, float VectorY, float VectorZ, float VectorW)
+void RenderSystem::UpdateShaderUniform4f(unsigned int* GraphicsUniformId, float VectorX, float VectorY, float VectorZ, float VectorW)
 {
-	_DataUniformUpdateList.emplace(GraphicsUniformId, VectorX, VectorY, VectorZ, VectorW);
-	_RenderCommandList.push(RenderCommand::UpdateUniform);
+	_DataUniformUpdateList4f.emplace(GraphicsUniformId, VectorX, VectorY, VectorZ, VectorW);
+	_RenderCommandList.push(RenderCommand::UpdateUniform4f);
+}
+
+void RenderSystem::AddShaderUniformMat4f(GLint* GraphicsUniformId, unsigned int* GraphicsShaderProgramId, const char* GraphicsUniformName)
+{
+	_DataUniformLoadListMat4f.emplace(GraphicsUniformId, GraphicsShaderProgramId, GraphicsUniformName);
+	_RenderCommandList.push(RenderCommand::AddUniformMat4f);
+}
+
+void RenderSystem::UpdateShaderUniformMat4f(GLint* GraphicsUniformId, const GLfloat* GraphicsUniformMat4fPtr)
+{
+	_DataUniformUpdateListMat4f.emplace(GraphicsUniformId, GraphicsUniformMat4fPtr);
+	_RenderCommandList.push(RenderCommand::UpdateUniformMat4f);
 }
 
 void RenderSystem::AddTexture(unsigned int* GraphicsTextureId, unsigned char* GraphicsTextureData, int GraphicsTexurePixelWidth, int GraphicsTexturePixelHeight)
@@ -331,13 +362,7 @@ void RenderSystem::BindTexture(unsigned int *TextureId)
 	_RenderCommandList.push(RenderCommand::BindTexture);
 }
 
-void RenderSystem::SwapBuffer()
+void RenderSystem::EnableDepthTest()
 {
-	std::cout << "Swap buffer query" << std::endl;
-	_RenderCommandList.push(RenderCommand::SwapBuffer);
-}
-
-void RenderSystem::ClearScreen()
-{
-	_RenderCommandList.push(RenderCommand::ClearScreen);
+	_RenderCommandList.push(RenderCommand::EnableDepthTest);
 }
