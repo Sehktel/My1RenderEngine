@@ -1,11 +1,5 @@
 #include "RenderSystem.h"
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwDestroyWindow(window);
-}
-
 int RenderSystem::SetupGraphicsConext()
 {
 	// 1) initialize glfw
@@ -30,9 +24,8 @@ void RenderSystem::StartLoop()
 		glfwTerminate();
 	}
 
-	glfwSetKeyCallback(_window, key_callback);
 	/* Make the window's context current */
-		glfwMakeContextCurrent(_window);
+	glfwMakeContextCurrent(_window);
 
 	// 2) initialize glad
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -44,7 +37,8 @@ void RenderSystem::StartLoop()
 	//render loop
 	while (!glfwWindowShouldClose(_window))
 	{
-		// check vector for Actions
+		// check system for Actions
+		ProcessInput(_window);
 		if (!_RenderCommandList.empty() ) // if there are any requests for manipulate with render
 		{
 			std::lock_guard<std::mutex> lock{ mtx };
@@ -281,10 +275,44 @@ void RenderSystem::StartLoop()
 
 }
 
+void RenderSystem::ProcessInput(GLFWwindow* window_ptr)
+{
+	// unhandled key press ESC
+	if (glfwGetKey(window_ptr, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window_ptr, true);
+
+	// process "W" key
+	if (glfwGetKey(window_ptr, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		auto inputPair = _InputMap.find(GLFW_KEY_W); // search data for "W" key
+		inputPair->second = GLFW_PRESS;
+	}
+	// process "A" key
+	if (glfwGetKey(window_ptr, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		auto inputPair = _InputMap.find(GLFW_KEY_A); // search data for "W" key
+		inputPair->second = GLFW_PRESS;
+	}
+	// process "S" key
+	if (glfwGetKey(window_ptr, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		auto inputPair = _InputMap.find(GLFW_KEY_S); // search data for "W" key
+		inputPair->second = GLFW_PRESS;
+	}
+	// process "D" key
+	if (glfwGetKey(window_ptr, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		auto inputPair = _InputMap.find(GLFW_KEY_D); // search data for "W" key
+		inputPair->second = GLFW_PRESS;
+	}
+}
+
 RenderSystem::RenderSystem()
 {
 	_window = NULL;
 	SetupGraphicsConext();
+	for (int currentInput = GLFW_KEY_0; currentInput < GLFW_KEY_Z; currentInput++) // preset _InputMap
+		_InputMap.insert(std::make_pair(currentInput, -1)); // -1 state by default
 }
 
 void RenderSystem::framebuffer_size_callback(GLFWwindow* window, int width, int height)

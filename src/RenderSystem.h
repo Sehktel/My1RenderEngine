@@ -2,10 +2,12 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "RenderActionsStruct.h"
+
 #include <thread>
 #include <iostream>
 #include <queue>
 #include <mutex>
+#include <map>
 
 /*
 	RenderSystem class that execute openGL commands.
@@ -22,6 +24,11 @@ class RenderSystem
 		RenderSystem();
 		int SetupGraphicsConext(); // let glfw create window
 		void StartLoop(); // start our Render system
+		void ProcessInput(GLFWwindow* window_ptr); // updates _InputVector each graphics frame
+
+		using input_name = int;
+		using input_state = int;
+		std::map <input_name, input_state> _InputMap; // map contains all keyboard, mouse current state
 
 		// Mesh data functions
 		void Add3DMesh(unsigned int* Graphics3DMeshVAOId, unsigned int* Graphics3DMeshVBOId, unsigned int* Graphics3DMeshEBOId,

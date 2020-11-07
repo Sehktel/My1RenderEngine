@@ -16,6 +16,7 @@ add_executable(game WIN32
   src/FileSystem.cpp
   src/RenderSystem.cpp
   src/Gameplay/GraphicsObject.cpp
+  src/Camera.cpp
 )
 
 set_property(TARGET game PROPERTY CXX_STANDARD 11)

@@ -9,6 +9,7 @@
 
 #include "RenderSystem.h"
 #include "FileSystem.h"
+#include "Camera.h"
 
 #include <thread>
 #include <chrono>
@@ -77,7 +78,6 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 	int TexurePixelWidth, TexturePixelHeight, TextureNChannels;
 	
 	TextureData = myFileSystem.ReadRawDataFromImage("data/texture.jpg", &TexurePixelWidth, &TexturePixelHeight, &TextureNChannels);
-	//TextureData = stbi_load("texture.png", &TexurePixelWidth, &TexturePixelHeight, &TextureNChannels, 0);
 
 	// allocate memory for GLchar shader arrays
 	const char* VertexShaderSource = new GLchar[SourceCodeStringVertexShader.length() + 1];
@@ -113,8 +113,12 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 
 	// Load MVP matrices
 	myRenderSystem->AddShaderUniformMat4f(&ModelMatrixID, &ShaderProgram, ModelMatrixName);
-	myRenderSystem->AddShaderUniformMat4f(&ViewMatrixID, &ShaderProgram, ViewMatrixName);
 	myRenderSystem->AddShaderUniformMat4f(&ProjectionMatrixID, &ShaderProgram, ProjectionMatrixName);
+	// Camera
+	glm::vec3 pos{ 0.0f, 0.0f,  3.0f };
+	glm::vec3 front{ 0.0f, 0.0f, -1.0f };
+	glm::vec3 up{ 0.0f, 1.0f,  0.0f };
+	Camera myCam(myRenderSystem, ViewMatrixName, &ShaderProgram, pos, pos + front, up);
 
 	myRenderSystem->EnableDepthTest();
 
@@ -125,13 +129,14 @@ void UserActionsThread(RenderSystem* myRenderSystem)
 		std::lock_guard<std::mutex> lock{ mtx };
 		GreenValue = sin(glfwGetTime() / 2.0f) + 0.5f;
 		myRenderSystem->BindShader(&ShaderProgram);
-		myRenderSystem->UpdateShaderUniform4f(&UniformID, 1.0f, GreenValue, 1.0f, 1.0f);
+		//myRenderSystem->UpdateShaderUniform4f(&UniformID, 1.0f, GreenValue, 1.0f, 1.0f);
 
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f) / 1000, glm::vec3(0.5f, 1.0f, 0.0f));
+		//model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f) / 1000, glm::vec3(0.5f, 1.0f, 0.0f));
 
 		myRenderSystem->UpdateShaderUniformMat4f(&ModelMatrixID, glm::value_ptr(model));
-		myRenderSystem->UpdateShaderUniformMat4f(&ViewMatrixID, glm::value_ptr(view));
+		myCam.Update();
 		myRenderSystem->UpdateShaderUniformMat4f(&ProjectionMatrixID, glm::value_ptr(projection));
+
 
 		myRenderSystem->BindTexture(&TextureID);
 		myRenderSystem->Draw3DMesh(&MeshInfoFormatID, sizeof(indices)/ sizeof(indices[0]), false, true);
